@@ -9,6 +9,7 @@
             --bg: #1a1a1a;
             --text: #e0e0e0;
             --accent: #4ade80;
+            --danger: #ff5f5f;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -18,115 +19,173 @@
             justify-content: center;
             padding: 2rem;
         }
-        .container {
-            width: 100%;
-            max-width: 400px;
+        .container { width: 100%; max-width: 450px; }
+        h1 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; }
+        
+        /* Input Area */
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #2a2a2a;
+            color: white;
         }
-        h1 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+        button#add-btn {
+            padding: 10px 15px;
+            background: var(--accent);
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Task Items */
         .task-item {
             display: flex;
             align-items: center;
             background: #2a2a2a;
             margin: 10px 0;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
-            cursor: pointer;
             transition: 0.2s;
         }
-        .task-item:hover { background: #333; }
+        .task-content {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            cursor: pointer;
+        }
         input[type="checkbox"] {
             margin-right: 15px;
-            transform: scale(1.5);
+            transform: scale(1.3);
             accent-color: var(--accent);
         }
-        .completed {
-            text-decoration: line-through;
-            opacity: 0.5;
+        .completed { text-decoration: line-through; opacity: 0.4; }
+        
+        .delete-btn {
+            color: var(--danger);
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0 10px;
         }
-        .reset-note {
-            font-size: 0.8rem;
-            color: #888;
-            margin-top: 20px;
-        }
+        .reset-note { font-size: 0.8rem; color: #888; margin-top: 20px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Daily Checklist</h1>
+    
+    <div class="input-group">
+        <input type="text" id="task-input" placeholder="Add a new task...">
+        <button id="add-btn">Add</button>
+    </div>
+
     <div id="checklist"></div>
-    <p class="reset-note">Auto-resets daily at 3:00 AM</p>
+    <p class="reset-note">Auto-resets progress daily at 3:00 AM</p>
 </div>
 
 <script>
-    const tasks = [
-        "Morning routine",
-        "Wrist Exercises 2x",
-        "ft10 w/ rachel",
-        "Apply to ONE job",
-        "Github Contribution",
-        "Did ONE Leetcode problem and review others",
-        "Lunch & Dinner",
-        "Night routine"
+    // Default items if the user has never used the app before
+    const defaultTasks = [
+        "Morning routine", "Wrist Exercises 2x", "ft10 w/ rachel", 
+        "Apply to ONE job", "Github Contribution", 
+        "Did ONE Leetcode problem and review others", "Lunch & Dinner", "Night routine"
     ];
 
-    const RESET_HOUR = 3; // 3 AM
+    const RESET_HOUR = 3; 
 
-    function getStorageKey() {
+    // Helper: Get the list of tasks (the structure)
+    function getTaskMasterList() {
+        const saved = localStorage.getItem('master_task_list');
+        return saved ? JSON.parse(saved) : defaultTasks;
+    }
+
+    // Helper: Save the list of tasks
+    function saveTaskMasterList(list) {
+        localStorage.setItem('master_task_list', JSON.stringify(list));
+    }
+
+    // Helper: Get the unique key for today's progress
+    function getProgressKey() {
         const now = new Date();
         let dateKey = now.toDateString();
-        
-        // If it's before 3AM, we are still technically on "yesterday's" list
         if (now.getHours() < RESET_HOUR) {
             const yesterday = new Date(now);
             yesterday.setDate(now.getDate() - 1);
             dateKey = yesterday.toDateString();
         }
-        return `tasks_${dateKey}`;
+        return `progress_${dateKey}`;
     }
 
-    function renderTasks() {
+    function render() {
         const container = document.getElementById('checklist');
-        const storageKey = getStorageKey();
-        const savedData = JSON.parse(localStorage.getItem(storageKey)) || {};
+        const tasks = getTaskMasterList();
+        const progressKey = getProgressKey();
+        const dailyProgress = JSON.parse(localStorage.getItem(progressKey)) || {};
 
         container.innerHTML = '';
-        tasks.forEach(task => {
+
+        tasks.forEach((task, index) => {
+            const isChecked = dailyProgress[task] || false;
             const div = document.createElement('div');
             div.className = 'task-item';
             
-            const isChecked = savedData[task] || false;
-            
             div.innerHTML = `
-                <input type="checkbox" ${isChecked ? 'checked' : ''}>
-                <span class="${isChecked ? 'completed' : ''}">${task}</span>
+                <div class="task-content" onclick="toggleTask('${task}')">
+                    <input type="checkbox" ${isChecked ? 'checked' : ''}>
+                    <span class="${isChecked ? 'completed' : ''}">${task}</span>
+                </div>
+                <button class="delete-btn" onclick="deleteTask(${index})">×</button>
             `;
-
-            div.onclick = () => {
-                const cb = div.querySelector('input');
-                cb.checked = !cb.checked;
-                updateTask(task, cb.checked);
-                renderTasks();
-            };
             container.appendChild(div);
         });
 
-        // Cleanup old localStorage items to keep it tidy
+        // Cleanup logic for old progress keys
         for (let key in localStorage) {
-            if (key.startsWith('tasks_') && key !== storageKey) {
+            if (key.startsWith('progress_') && key !== progressKey) {
                 localStorage.removeItem(key);
             }
         }
     }
 
-    function updateTask(task, isDone) {
-        const key = getStorageKey();
-        const data = JSON.parse(localStorage.getItem(key)) || {};
-        data[task] = isDone;
-        localStorage.setItem(key, JSON.stringify(data));
-    }
+    window.toggleTask = function(taskName) {
+        const key = getProgressKey();
+        const progress = JSON.parse(localStorage.getItem(key)) || {};
+        progress[taskName] = !progress[taskName];
+        localStorage.setItem(key, JSON.stringify(progress));
+        render();
+    };
 
-    renderTasks();
+    window.deleteTask = function(index) {
+        const list = getTaskMasterList();
+        list.splice(index, 1);
+        saveTaskMasterList(list);
+        render();
+    };
+
+    document.getElementById('add-btn').onclick = () => {
+        const input = document.getElementById('task-input');
+        const val = input.value.trim();
+        if (val) {
+            const list = getTaskMasterList();
+            list.push(val);
+            saveTaskMasterList(list);
+            input.value = '';
+            render();
+        }
+    };
+
+    // Allow "Enter" key to add tasks
+    document.getElementById('task-input').onkeypress = (e) => {
+        if (e.key === 'Enter') document.getElementById('add-btn').click();
+    };
+
+    render();
 </script>
 </body>
 </html>
