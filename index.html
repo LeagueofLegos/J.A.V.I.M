@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quest Log Pro - Dynamic</title>
+    <title>Quest Log Pro - Split Archetype Engine</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -11,6 +11,9 @@
             --card-bg: #1e1e1e;
             --text: #e0e0e0;
             --accent: #4ade80;
+            --professional: #3b82f6; /* Focus Blue */
+            --leisure: #10b981;      /* Mastery Green */
+            --sysadmin: #a855f7;     /* Health Purple */
             --danger: #ff5f5f;
             --nav-bg: #2a2a2a;
             --interactive: #2d2d2d;
@@ -54,6 +57,20 @@
             color: black;
             border-color: var(--accent);
         }
+        
+        /* Archetype System Banners */
+        .system-banner {
+            width: 100%;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+        .banner-professional { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: var(--professional); }
+        .banner-leisure { background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: var(--leisure); }
 
         .container { width: 90%; max-width: 550px; padding: 20px; }
         h1 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; text-transform: capitalize; margin-top: 10px;}
@@ -101,33 +118,37 @@
 </head>
 <body>
 
+<!-- Dynamic Calendar Target Lock Banner -->
+<div id="system-day-banner" class="system-banner">Initializing System Routines...</div>
+
 <nav id="main-nav"></nav>
 
 <div class="container">
-    <!-- Category Manager -->
-    <div class="config-panel">
-        <h3>+ Create Custom Category</h3>
+    <!-- Category Manager (Hidden to save mental clutter, but completely functional) -->
+    <div class="config-panel" style="display: none;" id="dev-config-panel">
+        <h3>+ Create Custom Channel</h3>
         <div class="input-group">
-            <input type="text" id="new-cat-id" placeholder="e.g., biweekly, gym">
+            <input type="text" id="new-cat-id" placeholder="e.g., side-project">
             <select id="new-cat-type">
                 <option value="days">Resets Every X Days</option>
                 <option value="never">Never Resets (Infinite)</option>
             </select>
-            <input type="number" id="new-cat-val" value="14" min="1" style="max-width: 60px;">
+            <input type="number" id="new-cat-val" value="1" min="1" style="max-width: 60px;">
             <button class="btn" onclick="createNewCategory()">Create</button>
         </div>
     </div>
 
     <!-- Active Area -->
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h1 id="view-title">Checklist</h1>
-        <button class="btn btn-danger" id="del-cat-btn" style="padding:5px 10px; font-size:0.8rem;">Delete Category</button>
+        <h1 id="view-title">Loading Tasks...</h1>
+        <button class="btn btn-secondary" onclick="toggleConfig()" style="padding:5px 10px; font-size:0.8rem;">Toggle Config Panel</button>
+        <button class="btn btn-danger" id="del-cat-btn" style="display:none; padding:5px 10px; font-size:0.8rem;">Delete Layer</button>
     </div>
     
     <span class="meta-text" id="reset-rules-text"></span>
 
     <div class="input-group">
-        <input type="text" id="task-input" placeholder="Add new task...">
+        <input type="text" id="task-input" placeholder="Add custom action to this profile...">
         <button class="btn" onclick="addTask()">Add</button>
     </div>
 
@@ -135,7 +156,7 @@
 
     <!-- Data Insights -->
     <div id="stats-container">
-        <h3>Yearly Metrics (Total Days Active)</h3>
+        <h3>Consistency Metrics (Total Days Fulfilled)</h3>
         <canvas id="historyChart"></canvas>
     </div>
 
@@ -152,20 +173,35 @@
 </div>
 
 <script>
-    let currentTab = 'daily';
+    let currentTab = '';
     let chart = null;
 
-    // Factory Defaults
+    // Split-Archetype Engine Default Mapping Layout
     const defaultCategories = {
-        daily: { type: 'days', interval: 1, label: 'Daily' },
-        weekly: { type: 'days', interval: 7, label: 'Weekly' },
-        biweekly: { type: 'days', interval: 14, label: 'Biweekly' },
-        monthly: { type: 'days', interval: 30, label: 'Monthly' },
-        yearly: { type: 'days', interval: 365, label: 'Yearly' }
+        sysadmin: { type: 'days', interval: 1, label: '🛠️ SysAdmin (Daily Health)' },
+        professional: { type: 'days', interval: 1, label: '👔 The Professional' },
+        mastery: { type: 'days', interval: 1, label: '🎮 Language & FGC Matchups' }
     };
 
+    // Organized Tasks, separated cleanly by internal identity goals
     const defaultTasks = {
-        daily: ["Morning routine", "Wrist Exercises 2x", "ft10 w/ rachel", "Apply to ONE job", "Github Contribution", "Did ONE Leetcode problem and review others", "Lunch & Dinner", "Night routine"]
+        sysadmin: [
+            "Morning routine & hydration",
+            "Wrist Exercises & Stretches (First Pass)",
+            "Wrist Exercises & Stretches (Post-Session Recovery)",
+            "Shower & basic maintenance/hygiene Check",
+            "Night routine & sleep buffer"
+        ],
+        professional: [
+            "Grind LeetCode: Solve ONE targeted problem and analyze logic",
+            "Job Hunt: Customize resume and submit ONE targeted application",
+            "Project/GitHub Contribution (Even a small layout adjust)"
+        ],
+        mastery: [
+            "The Linguist: Complete daily language flashcard reviews (Anki)",
+            "The Competitor: Active lab work, setup execution, or safe match-ups",
+            "Passive Immersion: Run streams, tournament footage, or media in target language"
+        ]
     };
 
     // State Hydration
@@ -184,6 +220,34 @@
         localStorage.setItem('app_task_history', JSON.stringify(taskHistory));
     }
 
+    function toggleConfig() {
+        const panel = document.getElementById('dev-config-panel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Evaluates day structure dynamically to update target locks
+    function evaluateSystemDay() {
+        const dayOfWeek = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const currentDayName = dayNames[dayOfWeek];
+        
+        const banner = document.getElementById('system-day-banner');
+        
+        // Schedule Rules Engine:
+        // Mon, Wed, Fri (1, 3, 5) = Professional Focus Profile
+        if ([1, 3, 5].includes(dayOfWeek)) {
+            banner.className = "system-banner banner-professional";
+            banner.innerText = `[TARGET LOCK: ${currentDayName.toUpperCase()}] Today is a PROFESSIONAL day. Focus on career. Mastery tasks are safely off-loaded.`;
+            return 'professional';
+        } 
+        // Tue, Thu, Sat, Sun (2, 4, 6, 0) = Language & Fighting Games Profile
+        else {
+            banner.className = "system-banner banner-leisure";
+            banner.innerText = `[TARGET LOCK: ${currentDayName.toUpperCase()}] Today is a MASTERY day. Run language loops and active netplay matchups.`;
+            return 'mastery';
+        }
+    }
+
     // Dynamic Navigation Renderer
     function renderNav() {
         const nav = document.getElementById('main-nav');
@@ -194,24 +258,35 @@
             btn.innerText = categories[cat].label || cat;
             btn.onclick = () => switchTab(cat);
             if (cat === currentTab) btn.className = 'active';
+            
+            // Apply unique highlight colors to matching functional profiles
+            if (cat === 'professional') btn.style.borderBottom = "3px solid var(--professional)";
+            if (cat === 'mastery') btn.style.borderBottom = "3px solid var(--leisure)";
+            if (cat === 'sysadmin') btn.style.borderBottom = "3px solid var(--sysadmin)";
+            
             nav.appendChild(btn);
         });
     }
 
     function switchTab(tab) {
-        if (!categories[tab]) tab = Object.keys(categories)[0] || 'daily';
+        if (!categories[tab]) tab = Object.keys(categories)[0] || 'sysadmin';
         currentTab = tab;
         
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
         const activeBtn = document.getElementById(`btn-${tab}`);
         if(activeBtn) activeBtn.classList.add('active');
         
-        document.getElementById('view-title').innerText = `${categories[tab].label || tab} Objectives`;
+        // Dynamically adjust operational accent color based on active tab profile
+        if (tab === 'professional') document.documentElement.style.setProperty('--accent', 'var(--professional)');
+        else if (tab === 'mastery') document.documentElement.style.setProperty('--accent', 'var(--leisure)');
+        else if (tab === 'sysadmin') document.documentElement.style.setProperty('--accent', 'var(--sysadmin)');
+        else document.documentElement.style.setProperty('--accent', '#4ade80');
+
+        document.getElementById('view-title').innerText = `${categories[tab].label || tab}`;
         
         const rulesText = categories[tab].type === 'never' ? 'Tracking Structure: Persistent (Never Resets)' : `Tracking Structure: Cyclical Interval (${categories[tab].interval} Days)`;
         document.getElementById('reset-rules-text').innerText = rulesText;
         
-        document.getElementById('del-cat-btn').onclick = () => deleteCategory(tab);
         render();
     }
 
@@ -234,17 +309,6 @@
         saveState();
         renderNav();
         switchTab(rawId);
-    }
-
-    function deleteCategory(cat) {
-        if (Object.keys(categories).length <= 1) return alert("System requires a minimum of one structural layer.");
-        if (confirm(`Purge entire ${cat} stack? This actions clears all historical tracking associated with this node.`)) {
-            delete categories[cat];
-            delete masterTasks[cat];
-            saveState();
-            renderNav();
-            switchTab(Object.keys(categories)[0]);
-        }
     }
 
     // Interval Calculation Logic
@@ -285,12 +349,10 @@
         taskNode.cycles[cycleId] = !taskNode.cycles[cycleId];
 
         if (taskNode.cycles[cycleId]) {
-            // Append current date metric if unique
             if (!taskNode.timestamps.includes(todayStr)) {
                 taskNode.timestamps.push(todayStr);
             }
         } else {
-            // Drop tracking if explicitly unverified
             taskNode.timestamps = taskNode.timestamps.filter(t => t !== todayStr);
         }
 
@@ -300,29 +362,31 @@
 
     window.deleteTask = function(index) {
         const taskName = masterTasks[currentTab][index];
-        if(taskHistory[currentTab] && taskHistory[currentTab][taskName]) {
-            delete taskHistory[currentTab][taskName];
+        if(confirm(`Remove "${taskName}" safely from database log structures?`)){
+            if(taskHistory[currentTab] && taskHistory[currentTab][taskName]) {
+                delete taskHistory[currentTab][taskName];
+            }
+            masterTasks[currentTab].splice(index, 1);
+            saveState();
+            render();
         }
-        masterTasks[currentTab].splice(index, 1);
-        saveState();
-        render();
     };
 
     function updateChart() {
         const tasks = masterTasks[currentTab] || [];
         const oneYearAgo = Date.now() - (365 * 24 * 60 * 60 * 1000);
 
-        // Map items data arrays
         const datasetValues = tasks.map(task => {
             const node = taskHistory[currentTab]?.[task];
             if (!node || !node.timestamps) return 0;
-            
-            // Filter timestamps within a 365-day boundary context
             return node.timestamps.filter(ts => new Date(ts).getTime() >= oneYearAgo).length;
         });
 
         const ctx = document.getElementById('historyChart').getContext('2d');
         if (chart) chart.destroy();
+
+        // Dynamically match graph color scheme to current context
+        const colorVar = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
 
         chart = new Chart(ctx, {
             type: 'bar',
@@ -330,21 +394,21 @@
                 labels: tasks,
                 datasets: [{
                     data: datasetValues,
-                    backgroundColor: '#4ade80',
+                    backgroundColor: colorVar,
                     borderRadius: 4,
                     borderSkipped: false,
-                    barThickness: 16
+                    barThickness: 14
                 }]
             },
             options: {
-                indexAxis: 'y', // Convert to horizontal grid model
+                indexAxis: 'y',
                 responsive: true,
                 scales: {
                     x: { 
                         beginAtZero: true, 
                         grid: { color: '#2a2a2a' }, 
                         ticks: { color: '#888', stepSize: 1 },
-                        title: { display: true, text: 'Total Days Logged (Past Year)', color: '#666' }
+                        title: { display: true, text: 'Total Completions (Past Year)', color: '#666' }
                     },
                     y: { 
                         grid: { display: false }, 
@@ -366,7 +430,6 @@
             const taskData = taskHistory[currentTab]?.[task];
             const isChecked = taskData?.cycles[cycleId] || false;
             
-            // Extract final completed date stamp if applicable
             const lastDate = (taskData?.timestamps && taskData.timestamps.length > 0) 
                 ? taskData.timestamps[taskData.timestamps.length - 1].split(' ').slice(1,3).join(' ')
                 : '';
@@ -386,7 +449,6 @@
         updateChart();
     }
 
-    // Cross-Device JSON State Exchange Drivers
     function exportState() {
         const bundle = { categories, masterTasks, taskHistory };
         document.getElementById('sync-box').value = btoa(encodeURIComponent(JSON.stringify(bundle)));
@@ -404,7 +466,8 @@
                 taskHistory = parsed.taskHistory;
                 saveState();
                 renderNav();
-                switchTab(Object.keys(categories)[0]);
+                const initialTab = evaluateSystemDay();
+                switchTab(initialTab);
                 alert("State database successfully merged and reloaded.");
             } else {
                 throw new Error("Corrupt payload framework structural integrity.");
@@ -414,9 +477,10 @@
         }
     }
 
-    // Initial Engine Boot Execution
+    // Run Engine Initializing Protocols
+    const initialTargetTab = evaluateSystemDay();
     renderNav();
-    switchTab('daily');
+    switchTab(initialTargetTab);
 </script>
 </body>
 </html>
