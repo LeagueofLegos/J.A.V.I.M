@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quest Log Pro - Split Archetype Engine</title>
+    <title>Quest Log Pro - Passive Tracker Engine</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -11,12 +11,13 @@
             --card-bg: #1e1e1e;
             --text: #e0e0e0;
             --accent: #4ade80;
-            --professional: #3b82f6; /* Focus Blue */
-            --leisure: #10b981;      /* Mastery Green */
-            --sysadmin: #a855f7;     /* Health Purple */
+            --professional: #3b82f6; 
+            --leisure: #10b981;      
+            --sysadmin: #a855f7;     
             --danger: #ff5f5f;
             --nav-bg: #2a2a2a;
             --interactive: #2d2d2d;
+            --selected: #3a3a3a;
         }
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
@@ -24,463 +25,655 @@
             color: var(--text);
             margin: 0;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             min-height: 100vh;
         }
 
-        /* Navigation */
-        nav {
-            width: 100%;
-            background: var(--nav-bg);
-            padding: 10px 0;
+        /* Sidebar Directory Tree Style Layout */
+        .sidebar {
+            width: 260px;
+            background: #181818;
+            border-right: 1px solid #2d2d2d;
             display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            flex-direction: column;
+            padding: 15px;
+            box-sizing: border-box;
         }
-        nav button {
-            background: none;
-            border: 1px solid #444;
-            color: var(--text);
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 5px;
+        .sidebar h2 {
             font-size: 0.9rem;
-            text-transform: capitalize;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 15px;
         }
-        nav button.active {
-            background: var(--accent);
-            color: black;
-            border-color: var(--accent);
+        .folder {
+            margin-bottom: 10px;
         }
-        
-        /* Archetype System Banners */
+        .folder-title {
+            font-weight: bold;
+            font-size: 0.95rem;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            color: #b0b0b0;
+        }
+        .file-link {
+            display: block;
+            padding: 8px 12px;
+            margin: 2px 0 2px 15px;
+            border-radius: 4px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-left: 2px solid transparent;
+        }
+        .file-link:hover, .file-link.active {
+            background: var(--interactive);
+        }
+        .file-link.active {
+            border-left-color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* Main Workspace Container */
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
         .system-banner {
             width: 100%;
             padding: 12px;
             text-align: center;
             font-weight: bold;
-            font-size: 1rem;
-            margin-bottom: 15px;
+            font-size: 0.95rem;
             box-sizing: border-box;
             border-bottom: 2px solid rgba(255,255,255,0.1);
         }
-        .banner-professional { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: var(--professional); }
-        .banner-leisure { background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: var(--leisure); }
+        .banner-professional { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .banner-leisure { background: rgba(16, 185, 129, 0.15); color: #34d399; }
 
-        .container { width: 90%; max-width: 550px; padding: 20px; }
-        h1 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; text-transform: capitalize; margin-top: 10px;}
+        .container {
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 0 auto;
+        }
         
-        /* Modals & Collapse Tools */
-        .config-panel {
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 8px;
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
             margin-bottom: 20px;
+        }
+        h1 { margin: 0; font-size: 1.8rem; text-transform: capitalize; }
+        
+        .vim-legend {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: #000;
+            padding: 6px 12px;
+            border-radius: 4px;
             border: 1px solid #333;
+            color: #888;
         }
-        .config-panel h3 { margin-top: 0; color: var(--accent); }
+        .vim-legend span { color: var(--accent); font-weight: bold; }
 
-        /* Input Controls */
-        .input-group { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        input[type="text"], input[type="number"], select {
-            flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #444;
-            background: var(--bg); color: white; min-width: 80px;
-        }
-        .btn {
-            padding: 10px 15px; background: var(--accent); border: none;
-            border-radius: 5px; font-weight: bold; cursor: pointer; color: black;
-        }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-secondary { background: #555; color: white; }
-
-        /* Task Display */
+        /* Passive Tasks UI Layout */
         .task-item {
-            display: flex; align-items: center; background: var(--card-bg);
-            margin: 8px 0; padding: 12px; border-radius: 8px; justify-content: space-between;
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #2d2d2d;
+            transition: border-color 0.2s;
+        }
+        .task-item.vim-focused {
+            border-color: var(--accent) !important;
+            background: #242424;
+        }
+        .task-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
         .task-content { display: flex; align-items: center; flex: 1; cursor: pointer; }
-        input[type="checkbox"] { margin-right: 15px; transform: scale(1.3); accent-color: var(--accent); }
-        .completed { text-decoration: line-through; opacity: 0.4; }
-        .date-badge { font-size: 0.75rem; color: #888; margin-left: auto; padding-right: 15px; }
         
-        .delete-btn { color: var(--danger); background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+        /* Checkbox styling signals active compliance */
+        input[type="checkbox"] { 
+            margin-right: 15px; 
+            transform: scale(1.3); 
+            accent-color: var(--accent); 
+        }
         
-        /* Layout Modules */
-        #stats-container, .sync-container { margin-top: 30px; background: var(--card-bg); padding: 15px; border-radius: 10px; border: 1px solid #333; }
-        textarea { width: 100%; height: 60px; background: #121212; color: #4ade80; border: 1px solid #444; padding: 8px; border-radius: 5px; font-family: monospace; box-sizing: border-box; resize: none;}
-        .meta-text { font-size: 0.8rem; color: #888; margin-bottom: 10px; display: block;}
+        /* Unchecked means skipped/failed in a passive engine */
+        .skipped-text { text-decoration: line-through; opacity: 0.4; color: var(--danger); }
+        .passive-status-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 10px;
+        }
+        .status-pass { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+        .status-fail { background: rgba(255, 95, 95, 0.2); color: var(--danger); }
+
+        /* Specific Micro-Tracking Sub-Forms */
+        .tracking-subform {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #2d2d2d;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .tracking-subform label { font-size: 0.8rem; color: #aaa; }
+        
+        /* General Inputs */
+        input[type="text"], input[type="number"], select {
+            padding: 8px; border-radius: 4px; border: 1px solid #444;
+            background: var(--bg); color: white; font-size: 0.85rem;
+        }
+        .btn {
+            padding: 8px 12px; background: var(--accent); border: none;
+            border-radius: 4px; font-weight: bold; cursor: pointer; color: black; font-size: 0.85rem;
+        }
+        .btn-secondary { background: #444; color: white; }
+
+        /* Panels for Metrics, Search & Analysis Exporting */
+        .panel {
+            margin-top: 25px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid #2d2d2d;
+        }
+        .panel h3 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        
+        textarea { 
+            width: 100%; height: 120px; background: #0c0c0c; color: #4ade80; 
+            border: 1px solid #333; padding: 10px; border-radius: 4px; 
+            font-family: monospace; box-sizing: border-box; resize: vertical; margin-top: 10px;
+        }
+        
+        .search-box {
+            width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 15px; font-size: 0.9rem;
+        }
+        
+        .search-results-list {
+            list-style: none; padding: 0; margin: 0;
+        }
+        .search-results-list li {
+            padding: 8px; background: #151515; border-bottom: 1px solid #222; font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
 
-<!-- Dynamic Calendar Target Lock Banner -->
-<div id="system-day-banner" class="system-banner">Initializing System Routines...</div>
-
-<nav id="main-nav"></nav>
-
-<div class="container">
-    <!-- Category Manager (Hidden to save mental clutter, but completely functional) -->
-    <div class="config-panel" style="display: none;" id="dev-config-panel">
-        <h3>+ Create Custom Channel</h3>
-        <div class="input-group">
-            <input type="text" id="new-cat-id" placeholder="e.g., side-project">
-            <select id="new-cat-type">
-                <option value="days">Resets Every X Days</option>
-                <option value="never">Never Resets (Infinite)</option>
-            </select>
-            <input type="number" id="new-cat-val" value="1" min="1" style="max-width: 60px;">
-            <button class="btn" onclick="createNewCategory()">Create</button>
-        </div>
-    </div>
-
-    <!-- Active Area -->
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h1 id="view-title">Loading Tasks...</h1>
-        <button class="btn btn-secondary" onclick="toggleConfig()" style="padding:5px 10px; font-size:0.8rem;">Toggle Config Panel</button>
-        <button class="btn btn-danger" id="del-cat-btn" style="display:none; padding:5px 10px; font-size:0.8rem;">Delete Layer</button>
+<div class="sidebar">
+    <h2>📁 Workspace Tree</h2>
+    
+    <div class="folder">
+        <div class="folder-title">📁 Profiles</div>
+        <div id="directory-profiles"></div>
     </div>
     
-    <span class="meta-text" id="reset-rules-text"></span>
-
-    <div class="input-group">
-        <input type="text" id="task-input" placeholder="Add custom action to this profile...">
-        <button class="btn" onclick="addTask()">Add</button>
+    <div class="folder" style="margin-top: 15px;">
+        <div class="folder-title">📊 Analysis Engine</div>
+        <div class="file-link" id="file-metrics" onclick="scrollToSection('metrics-section')">📄 consistency.log</div>
+        <div class="file-link" id="file-search" onclick="scrollToSection('search-section')">📄 query_history.db</div>
+        <div class="file-link" id="file-export" onclick="scrollToSection('export-section')">📄 ai_export_bundle.json</div>
     </div>
+</div>
 
-    <div id="checklist"></div>
+<div class="workspace">
+    <div id="system-day-banner" class="system-banner">Initializing Engine Core Array...</div>
 
-    <!-- Data Insights -->
-    <div id="stats-container">
-        <h3>Consistency Metrics (Total Days Fulfilled)</h3>
-        <canvas id="historyChart"></canvas>
-    </div>
-
-    <!-- Cross-Device Sync Engine -->
-    <div class="sync-container">
-        <h3>Device-to-Device Synchronization</h3>
-        <span class="meta-text">Copy your encrypted state to deploy across platforms seamlessly:</span>
-        <div class="input-group">
-            <button class="btn btn-secondary" onclick="exportState()">Generate Export String</button>
-            <button class="btn" onclick="importState()">Load Imported String</button>
+    <div class="container">
+        
+        <div class="header-row">
+            <div>
+                <h1 id="view-title">Active Log</h1>
+                <div style="font-size: 0.8rem; color:#666; margin-top:4px;">Assumes completion. Uncheck if missed.</div>
+            </div>
+            <div class="vim-legend">
+                Vim Controls: <span>j</span> down | <span>k</span> up | <span>Space</span> toggle | <span>h/l</span> switch tabs
+            </div>
         </div>
-        <textarea id="sync-box" placeholder="Paste data bundle here..."></textarea>
+
+        <div id="checklist"></div>
+
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <input type="text" id="task-input" placeholder="Append custom structural action block..." style="flex:1;">
+            <button class="btn" onclick="addTask()">Append Node</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #333; margin: 40px 0;">
+
+        <div class="panel" id="metrics-section">
+            <h3>📊 consistency.log (Historical Analytics Overview)</h3>
+            <canvas id="historyChart" style="max-height: 280px;"></canvas>
+        </div>
+
+        <div class="panel" id="search-section">
+            <h3>🔍 query_history.db (Deep String History Search)</h3>
+            <input type="text" id="search-input" class="search-box" placeholder="Filter through execution strings, tracking numbers, notes, or specific categories..." oninput="executeDataSearch()">
+            <ul id="search-results" class="search-results-list"></ul>
+        </div>
+
+        <div class="panel" id="export-section">
+            <h3>📦 ai_export_bundle.json (Direct AI Weakness Ingestion Interface)</h3>
+            <span style="font-size:0.8rem; color:#888; display:block; margin-bottom:10px;">
+                Outputs fully raw, chronological diagnostic trees including performance timestamps, micro-metrics values, and specific metrics tracking data targets. Perfect for pasting directly into an LLM context box to parse out performance vulnerabilities.
+            </span>
+            <button class="btn" onclick="generateStructuredAiExport()">Assemble Target Dataset Bundle</button>
+            <textarea id="export-output" readonly placeholder="Click generate button above to output complete structural system arrays..."></textarea>
+        </div>
+
     </div>
 </div>
 
 <script>
-    let currentTab = '';
-    let chart = null;
-
-    // Split-Archetype Engine Default Mapping Layout
+    // State Initialization Framework
+    // High-performance tracking profiles
     const defaultCategories = {
-        sysadmin: { type: 'days', interval: 1, label: '🛠️ SysAdmin (Daily Health)' },
-        professional: { type: 'days', interval: 1, label: '👔 The Professional' },
-        mastery: { type: 'days', interval: 1, label: '🎮 Language & FGC Matchups' }
+        sysadmin: { label: 'sysadmin.sh', color: 'var(--sysadmin)' },
+        professional: { label: 'career.exe', color: 'var(--professional)' },
+        mastery: { label: 'mastery.cfg', color: 'var(--leisure)' }
     };
 
-    // Organized Tasks, separated cleanly by internal identity goals
     const defaultTasks = {
         sysadmin: [
-            "Morning routine & hydration",
-            "Wrist Exercises & Stretches (First Pass)",
-            "Wrist Exercises & Stretches (Post-Session Recovery)",
-            "Shower & basic maintenance/hygiene Check",
-            "Night routine & sleep buffer"
+            { id: "sa_1", name: "Morning routine & hydration", trackType: "none" },
+            { id: "sa_2", name: "Wrist Exercises & Stretches (First Pass)", trackType: "none" },
+            { id: "sa_3", name: "Wrist Exercises & Stretches (Post-Session Recovery)", trackType: "none" },
+            { id: "sa_4", name: "Shower & basic maintenance/hygiene Check", trackType: "none" },
+            { id: "sa_5", name: "Night routine & sleep buffer", trackType: "none" }
         ],
         professional: [
-            "Grind LeetCode: Solve ONE targeted problem and analyze logic",
-            "Job Hunt: Customize resume and submit ONE targeted application",
-            "Project/GitHub Contribution (Even a small layout adjust)"
+            { id: "prof_1", name: "Grind LeetCode: Solve targeted problem", trackType: "numeric", label: "Problem ID / Number Solved" },
+            { id: "prof_2", name: "Job Hunt: Customize resume & submit targeted application", trackType: "text", label: "Target Corporation Name" },
+            { id: "prof_3", name: "Project/GitHub Contribution (Small layout adjustment count)", trackType: "none" }
         ],
         mastery: [
-            "The Linguist: Complete daily language flashcard reviews (Anki)",
-            "The Competitor: Active lab work, setup execution, or safe match-ups",
-            "Passive Immersion: Run streams, tournament footage, or media in target language"
+            { id: "mast_1", name: "The Linguist: Complete daily language flashcard reviews (Anki)", trackType: "numeric", label: "Cards Reviewed Count" },
+            { id: "mast_2", name: "The Competitor: Active lab work, execution drill arrays, match-ups", trackType: "text", label: "Target Matchup / Character Archetype" },
+            { id: "mast_3", name: "Passive Immersion: Run streams, tournament footage, target language media", trackType: "numeric", label: "Total Minutes Elapsed" }
         ]
     };
 
-    // State Hydration
-    let categories = getData('app_categories', defaultCategories);
-    let masterTasks = getData('app_master_tasks', defaultTasks);
-    let taskHistory = getData('app_task_history', {}); 
+    let categories = JSON.parse(localStorage.getItem('p_categories')) || defaultCategories;
+    let masterTasks = JSON.parse(localStorage.getItem('p_master_tasks')) || defaultTasks;
+    // Core structural historical state system
+    let executionLogs = JSON.parse(localStorage.getItem('p_execution_logs')) || {}; 
+    
+    let currentTab = 'sysadmin';
+    let focusedTaskIndex = 0;
+    let chartInstance = null;
 
-    function getData(key, fallback) {
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : fallback;
+    // Time Tracking Mechanics
+    function getTodayString() {
+        const d = new Date();
+        // Shifts reset window to 3:00 AM local time safely 
+        const adjusted = new Date(d.getTime() - (3 * 60 * 60 * 1000));
+        return adjusted.toISOString().split('T')[0];
     }
 
-    function saveState() {
-        localStorage.setItem('app_categories', JSON.stringify(categories));
-        localStorage.setItem('app_master_tasks', JSON.stringify(masterTasks));
-        localStorage.setItem('app_task_history', JSON.stringify(taskHistory));
+    // Passive Routine Evaluation Logic Engine
+    // Automatically pre-populates days as successful options
+    function clearAndHydrateDayLog(dateStr) {
+        if (!executionLogs[dateStr]) {
+            executionLogs[dateStr] = {};
+        }
+        
+        Object.keys(masterTasks).forEach(cat => {
+            if (!executionLogs[dateStr][cat]) {
+                executionLogs[dateStr][cat] = {};
+            }
+            masterTasks[cat].forEach(task => {
+                if (executionLogs[dateStr][cat][task.id] === undefined) {
+                    // Default configuration parameter: Auto-assumed complete (TRUE)
+                    executionLogs[dateStr][cat][task.id] = {
+                        completed: true,
+                        metricValue: ""
+                    };
+                }
+            });
+        });
+        localStorage.setItem('p_execution_logs', JSON.stringify(executionLogs));
     }
 
-    function toggleConfig() {
-        const panel = document.getElementById('dev-config-panel');
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    }
-
-    // Evaluates day structure dynamically to update target locks
-    function evaluateSystemDay() {
-        const dayOfWeek = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
+    function evaluateSystemDayBanner() {
+        const dayOfWeek = new Date().getDay(); 
         const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         const currentDayName = dayNames[dayOfWeek];
-        
         const banner = document.getElementById('system-day-banner');
         
-        // Schedule Rules Engine:
-        // Mon, Wed, Fri (1, 3, 5) = Professional Focus Profile
         if ([1, 3, 5].includes(dayOfWeek)) {
             banner.className = "system-banner banner-professional";
-            banner.innerText = `[TARGET LOCK: ${currentDayName.toUpperCase()}] Today is a PROFESSIONAL day. Focus on career. Mastery tasks are safely off-loaded.`;
-            return 'professional';
-        } 
-        // Tue, Thu, Sat, Sun (2, 4, 6, 0) = Language & Fighting Games Profile
-        else {
-            banner.className = "system-banner banner-leisure";
-            banner.innerText = `[TARGET LOCK: ${currentDayName.toUpperCase()}] Today is a MASTERY day. Run language loops and active netplay matchups.`;
-            return 'mastery';
-        }
-    }
-
-    // Dynamic Navigation Renderer
-    function renderNav() {
-        const nav = document.getElementById('main-nav');
-        nav.innerHTML = '';
-        Object.keys(categories).forEach(cat => {
-            const btn = document.createElement('button');
-            btn.id = `btn-${cat}`;
-            btn.innerText = categories[cat].label || cat;
-            btn.onclick = () => switchTab(cat);
-            if (cat === currentTab) btn.className = 'active';
-            
-            // Apply unique highlight colors to matching functional profiles
-            if (cat === 'professional') btn.style.borderBottom = "3px solid var(--professional)";
-            if (cat === 'mastery') btn.style.borderBottom = "3px solid var(--leisure)";
-            if (cat === 'sysadmin') btn.style.borderBottom = "3px solid var(--sysadmin)";
-            
-            nav.appendChild(btn);
-        });
-    }
-
-    function switchTab(tab) {
-        if (!categories[tab]) tab = Object.keys(categories)[0] || 'sysadmin';
-        currentTab = tab;
-        
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-        const activeBtn = document.getElementById(`btn-${tab}`);
-        if(activeBtn) activeBtn.classList.add('active');
-        
-        // Dynamically adjust operational accent color based on active tab profile
-        if (tab === 'professional') document.documentElement.style.setProperty('--accent', 'var(--professional)');
-        else if (tab === 'mastery') document.documentElement.style.setProperty('--accent', 'var(--leisure)');
-        else if (tab === 'sysadmin') document.documentElement.style.setProperty('--accent', 'var(--sysadmin)');
-        else document.documentElement.style.setProperty('--accent', '#4ade80');
-
-        document.getElementById('view-title').innerText = `${categories[tab].label || tab}`;
-        
-        const rulesText = categories[tab].type === 'never' ? 'Tracking Structure: Persistent (Never Resets)' : `Tracking Structure: Cyclical Interval (${categories[tab].interval} Days)`;
-        document.getElementById('reset-rules-text').innerText = rulesText;
-        
-        render();
-    }
-
-    function createNewCategory() {
-        const idInput = document.getElementById('new-cat-id');
-        const rawId = idInput.value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-        const type = document.getElementById('new-cat-type').value;
-        const interval = parseInt(document.getElementById('new-cat-val').value) || 1;
-
-        if(!rawId || categories[rawId]) return alert('Invalid or existing category handle.');
-
-        categories[rawId] = {
-            type: type,
-            interval: type === 'never' ? Infinity : interval,
-            label: idInput.value.trim()
-        };
-        masterTasks[rawId] = [];
-        
-        idInput.value = '';
-        saveState();
-        renderNav();
-        switchTab(rawId);
-    }
-
-    // Interval Calculation Logic
-    function getResetCycleId() {
-        const catConfig = categories[currentTab];
-        if (!catConfig || catConfig.type === 'never') return 'static_epoch';
-
-        const now = new Date();
-        // Global anchor shift to 3:00 AM local time window
-        const adjustedTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-        const totalDays = Math.floor(adjustedTime.getTime() / (1000 * 60 * 60 * 24));
-        
-        const cycleChunk = Math.floor(totalDays / catConfig.interval);
-        return `cycle_${cycleChunk}`;
-    }
-
-    function addTask() {
-        const input = document.getElementById('task-input');
-        const val = input.value.trim();
-        if (!val) return;
-
-        if (!masterTasks[currentTab]) masterTasks[currentTab] = [];
-        masterTasks[currentTab].push(val);
-        
-        input.value = '';
-        saveState();
-        render();
-    }
-
-    window.toggleTask = function(taskName) {
-        const cycleId = getResetCycleId();
-        const todayStr = new Date().toDateString();
-
-        if (!taskHistory[currentTab]) taskHistory[currentTab] = {};
-        if (!taskHistory[currentTab][taskName]) taskHistory[currentTab][taskName] = { cycles: {}, timestamps: [] };
-
-        const taskNode = taskHistory[currentTab][taskName];
-        taskNode.cycles[cycleId] = !taskNode.cycles[cycleId];
-
-        if (taskNode.cycles[cycleId]) {
-            if (!taskNode.timestamps.includes(todayStr)) {
-                taskNode.timestamps.push(todayStr);
-            }
+            banner.innerText = `[TARGET LOCK: ${currentDayName.toUpperCase()}] Today is a PROFESSIONAL focus block. Mastery nodes safely running on passive tracking logic loops.`;
         } else {
-            taskNode.timestamps = taskNode.timestamps.filter(t => t !== todayStr);
+            banner.className = "system-banner banner-leisure";
+            banner.innerText = `[TARGET LOCK: ${currentDayName.toUpperCase()}] Today is a MASTERY focus block. Execute custom matching logic vectors and language cards.`;
+        }
+    }
+
+    // Rendering Engine Tasks
+    function renderDirectoryTree() {
+        const target = document.getElementById('directory-profiles');
+        target.innerHTML = '';
+        Object.keys(categories).forEach(cat => {
+            const link = document.createElement('div');
+            link.className = `file-link ${cat === currentTab ? 'active' : ''}`;
+            link.innerText = `📄 ${categories[cat].label}`;
+            link.onclick = () => switchWorkspaceTab(cat);
+            target.appendChild(link);
+        });
+    }
+
+    function switchWorkspaceTab(cat) {
+        currentTab = cat;
+        focusedTaskIndex = 0;
+        
+        const accentColor = categories[cat].color || '#4ade80';
+        document.documentElement.style.setProperty('--accent', accentColor);
+        
+        renderDirectoryTree();
+        renderActiveChecklist();
+        updateAnalyticsChart();
+    }
+
+    function renderActiveChecklist() {
+        const container = document.getElementById('checklist');
+        container.innerHTML = '';
+        const today = getTodayString();
+        clearAndHydrateDayLog(today);
+
+        const activeTasks = masterTasks[currentTab] || [];
+        document.getElementById('view-title').innerText = categories[currentTab].label;
+
+        if(activeTasks.length === 0) {
+            container.innerHTML = `<div style="color:#666; font-style:italic;">No structural target nodes configured inside this tree layer.</div>`;
+            return;
         }
 
-        saveState();
-        render();
-    };
+        activeTasks.forEach((task, index) => {
+            const logEntry = executionLogs[today][currentTab][task.id] || { completed: true, metricValue: "" };
+            const isPassed = logEntry.completed;
 
-    window.deleteTask = function(index) {
-        const taskName = masterTasks[currentTab][index];
-        if(confirm(`Remove "${taskName}" safely from database log structures?`)){
-            if(taskHistory[currentTab] && taskHistory[currentTab][taskName]) {
-                delete taskHistory[currentTab][taskName];
+            const itemNode = document.createElement('div');
+            itemNode.className = `task-item ${index === focusedTaskIndex ? 'vim-focused' : ''}`;
+            
+            let trackingMarkup = '';
+            if (task.trackType !== 'none') {
+                trackingMarkup = `
+                    <div class="tracking-subform">
+                        <label>📈 ${task.label || 'Data log'}:</label>
+                        <input type="text" value="${logEntry.metricValue || ''}" 
+                               placeholder="e.g. 50, or text details..." 
+                               onchange="updateMetricValue('${task.id}', this.value)">
+                    </div>
+                `;
             }
-            masterTasks[currentTab].splice(index, 1);
-            saveState();
-            render();
-        }
+
+            itemNode.innerHTML = `
+                <div class="task-main">
+                    <div class="task-content" onclick="toggleTaskCompletion('${task.id}')">
+                        <input type="checkbox" ${isPassed ? 'checked' : ''}>
+                        <span class="${!isPassed ? 'skipped-text' : ''}">${task.name}</span>
+                        <span class="passive-status-label ${isPassed ? 'status-pass' : 'status-fail'}">
+                            ${isPassed ? 'PASS (AUTO)' : 'SKIPPED/FAILED'}
+                        </span>
+                    </div>
+                    <button style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:1.1rem;" onclick="deleteTaskNode(${index})">×</button>
+                </div>
+                ${trackingMarkup}
+            `;
+            container.appendChild(itemNode);
+        });
+    }
+
+    // Dynamic State Mutators
+    window.toggleTaskCompletion = function(taskId) {
+        const today = getTodayString();
+        const currentStatus = executionLogs[today][currentTab][taskId].completed;
+        executionLogs[today][currentTab][taskId].completed = !currentStatus;
+        
+        localStorage.setItem('p_execution_logs', JSON.stringify(executionLogs));
+        renderActiveChecklist();
+        updateAnalyticsChart();
     };
 
-    function updateChart() {
-        const tasks = masterTasks[currentTab] || [];
-        const oneYearAgo = Date.now() - (365 * 24 * 60 * 60 * 1000);
+    window.updateMetricValue = function(taskId, value) {
+        const today = getTodayString();
+        executionLogs[today][currentTab][taskId].metricValue = value;
+        localStorage.setItem('p_execution_logs', JSON.stringify(executionLogs));
+    };
 
-        const datasetValues = tasks.map(task => {
-            const node = taskHistory[currentTab]?.[task];
-            if (!node || !node.timestamps) return 0;
-            return node.timestamps.filter(ts => new Date(ts).getTime() >= oneYearAgo).length;
+    window.addTask = function() {
+        const input = document.getElementById('task-input');
+        const text = input.value.trim();
+        if(!text) return;
+
+        const newId = `custom_${Date.now()}`;
+        masterTasks[currentTab].push({
+            id: newId,
+            name: text,
+            trackType: "text",
+            label: "Performance Context Notes"
         });
 
+        localStorage.setItem('p_master_tasks', JSON.stringify(masterTasks));
+        input.value = '';
+        
+        // Refresh local views safely
+        const today = getTodayString();
+        if(executionLogs[today] && executionLogs[today][currentTab]) {
+            executionLogs[today][currentTab][newId] = { completed: true, metricValue: "" };
+            localStorage.setItem('p_execution_logs', JSON.stringify(executionLogs));
+        }
+
+        renderActiveChecklist();
+        updateAnalyticsChart();
+    };
+
+    window.deleteTaskNode = function(index) {
+        if(confirm("Safely scrub this tracking line item from workspace profiles?")) {
+            masterTasks[currentTab].splice(index, 1);
+            localStorage.setItem('p_master_tasks', JSON.stringify(masterTasks));
+            renderActiveChecklist();
+            updateAnalyticsChart();
+        }
+    };
+
+    // Navigation and Workspace Scrolling Logic
+    function scrollToSection(id) {
+        document.querySelectorAll('.file-link').forEach(l => l.classList.remove('active'));
+        document.getElementById(`file-${id.split('-')[0]}`).classList.add('active');
+        document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Vim Controller Key-mapping Listeners Engine
+    window.addEventListener('keydown', function(e) {
+        // Prevent key interceptions when filling input fields safely
+        if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+            return;
+        }
+
+        const activeTasks = masterTasks[currentTab] || [];
+        if(activeTasks.length === 0) return;
+
+        switch(e.key) {
+            case 'j': // Navigating Down Selection
+                e.preventDefault();
+                if (focusedTaskIndex < activeTasks.length - 1) {
+                    focusedTaskIndex++;
+                    renderActiveChecklist();
+                }
+                break;
+            case 'k': // Navigating Up Selection
+                e.preventDefault();
+                if (focusedTaskIndex > 0) {
+                    focusedTaskIndex--;
+                    renderActiveChecklist();
+                }
+                break;
+            case ' ': // Toggle Target Item (Spacebar Key)
+                e.preventDefault();
+                const selectedTask = activeTasks[focusedTaskIndex];
+                if(selectedTask) {
+                    toggleTaskCompletion(selectedTask.id);
+                }
+                break;
+            case 'h': // Cycle Tab Backwards
+                e.preventDefault();
+                cycleWorkspaceTab(-1);
+                break;
+            case 'l': // Cycle Tab Forwards
+                e.preventDefault();
+                cycleWorkspaceTab(1);
+                break;
+        }
+    });
+
+    function cycleWorkspaceTab(direction) {
+        const keys = Object.keys(categories);
+        let currentIndex = keys.indexOf(currentTab);
+        currentIndex += direction;
+        if(currentIndex < 0) currentIndex = keys.length - 1;
+        if(currentIndex >= keys.length) currentIndex = 0;
+        switchWorkspaceTab(keys[currentIndex]);
+    }
+
+    // Analytics Engine Engine Mapping Calculations
+    function updateAnalyticsChart() {
         const ctx = document.getElementById('historyChart').getContext('2d');
-        if (chart) chart.destroy();
+        const activeTasks = masterTasks[currentTab] || [];
+        
+        // Gathers the past 14 days of metrics records cleanly
+        const labels = [];
+        const datasetsMap = {};
 
-        // Dynamically match graph color scheme to current context
-        const colorVar = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+        activeTasks.forEach(t => {
+            datasetsMap[t.id] = {
+                label: t.name.substring(0, 20) + '...',
+                data: [],
+                borderColor: '#' + Math.floor(Math.random()*16777215).toString(16),
+                borderWidth: 2,
+                tension: 0.2,
+                fill: false
+            };
+        });
 
-        chart = new Chart(ctx, {
-            type: 'bar',
+        for (let i = 13; i >= 0; i--) {
+            const d = new Date();
+            const adj = new Date(d.getTime() - (i * 24 * 60 * 60 * 1000) - (3 * 60 * 60 * 1000));
+            const dayStr = adj.toISOString().split('T')[0];
+            
+            // Format labels to display short dates (e.g., "May 29")
+            const displayDate = adj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            labels.push(displayDate);
+
+            activeTasks.forEach(t => {
+                const dayLog = executionLogs[dayStr]?.[currentTab]?.[t.id];
+                // In our data, 1 indicates complete compliance; 0 indicates skipped/failed
+                const val = (dayLog && dayLog.completed === false) ? 0 : 1; 
+                datasetsMap[t.id].data.push(val);
+            });
+        }
+
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
             data: {
-                labels: tasks,
-                datasets: [{
-                    data: datasetValues,
-                    backgroundColor: colorVar,
-                    borderRadius: 4,
-                    borderSkipped: false,
-                    barThickness: 14
-                }]
+                labels: labels,
+                datasets: Object.values(datasetsMap)
             },
             options: {
-                indexAxis: 'y',
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
-                    x: { 
-                        beginAtZero: true, 
-                        grid: { color: '#2a2a2a' }, 
-                        ticks: { color: '#888', stepSize: 1 },
-                        title: { display: true, text: 'Total Completions (Past Year)', color: '#666' }
+                    y: {
+                        min: 0,
+                        max: 1,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) { return value === 1 ? 'PASS' : 'FAIL'; },
+                            color: '#888'
+                        },
+                        grid: { color: '#2d2d2d' }
                     },
-                    y: { 
-                        grid: { display: false }, 
-                        ticks: { color: '#e0e0e0', font: { size: 11 } } 
-                    }
+                    x: { ticks: { color: '#888' }, grid: { display: false } }
                 },
-                plugins: { legend: { display: false } }
+                plugins: {
+                    legend: { display: true, labels: { color: '#aaa', boxWidth: 10, font: { size: 10 } } }
+                }
             }
         });
     }
 
-    function render() {
-        const container = document.getElementById('checklist');
-        const tasks = masterTasks[currentTab] || [];
-        const cycleId = getResetCycleId();
+    // High-Speed History String Database Query Search Filter
+    window.executeDataSearch = function() {
+        const query = document.getElementById('search-input').value.toLowerCase().trim();
+        const resultsTarget = document.getElementById('search-results');
+        resultsTarget.innerHTML = '';
 
-        container.innerHTML = '';
-        tasks.forEach((task, index) => {
-            const taskData = taskHistory[currentTab]?.[task];
-            const isChecked = taskData?.cycles[cycleId] || false;
-            
-            const lastDate = (taskData?.timestamps && taskData.timestamps.length > 0) 
-                ? taskData.timestamps[taskData.timestamps.length - 1].split(' ').slice(1,3).join(' ')
-                : '';
+        if(!query) return;
 
-            const div = document.createElement('div');
-            div.className = 'task-item';
-            div.innerHTML = `
-                <div class="task-content" onclick="toggleTask('${task}')">
-                    <input type="checkbox" ${isChecked ? 'checked' : ''}>
-                    <span class="${isChecked ? 'completed' : ''}">${task}</span>
-                </div>
-                ${lastDate ? `<span class="date-badge">Done: ${lastDate}</span>` : ''}
-                <button class="delete-btn" onclick="deleteTask(${index})">×</button>
-            `;
-            container.appendChild(div);
+        Object.keys(executionLogs).forEach(dateStr => {
+            const dayData = executionLogs[dateStr];
+            Object.keys(dayData).forEach(catKey => {
+                const catLog = dayData[catKey];
+                Object.keys(catLog).forEach(taskId => {
+                    const runItem = catLog[taskId];
+                    const taskMeta = (masterTasks[catKey] || []).find(t => t.id === taskId) || { name: "Archived/Deleted Task Node" };
+                    
+                    const matchText = `${dateStr} ${taskMeta.name} ${runItem.metricValue || ''} ${catKey}`.toLowerCase();
+                    
+                    if(matchText.includes(query)) {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<strong>${dateStr}</strong> [${catKey.toUpperCase()}] - ${taskMeta.name} ➔ <span style="color:var(--accent);">${runItem.completed !== false ? 'PASSED' : 'SKIPPED'}</span> ${runItem.metricValue ? `(Value: <em>${runItem.metricValue}</em>)` : ''}`;
+                        resultsTarget.appendChild(li);
+                    }
+                });
+            });
         });
-        updateChart();
-    }
 
-    function exportState() {
-        const bundle = { categories, masterTasks, taskHistory };
-        document.getElementById('sync-box').value = btoa(encodeURIComponent(JSON.stringify(bundle)));
-        alert("Encrypted sync payload copied to interface text block.");
-    }
-
-    function importState() {
-        const raw = document.getElementById('sync-box').value.trim();
-        if (!raw) return alert("Target input payload container is empty.");
-        try {
-            const parsed = JSON.parse(decodeURIComponent(atob(raw)));
-            if (parsed.categories && parsed.masterTasks && parsed.taskHistory) {
-                categories = parsed.categories;
-                masterTasks = parsed.masterTasks;
-                taskHistory = parsed.taskHistory;
-                saveState();
-                renderNav();
-                const initialTab = evaluateSystemDay();
-                switchTab(initialTab);
-                alert("State database successfully merged and reloaded.");
-            } else {
-                throw new Error("Corrupt payload framework structural integrity.");
-            }
-        } catch(e) {
-            alert("Parsing Exception: Verify data block validity.");
+        if(resultsTarget.children.length === 0) {
+            resultsTarget.innerHTML = `<li style="color:#666;">No historical tracking logs found matching search pattern parameters.</li>`;
         }
-    }
+    };
 
-    // Run Engine Initializing Protocols
-    const initialTargetTab = evaluateSystemDay();
-    renderNav();
-    switchTab(initialTargetTab);
+    // AI Analytical Structural Export Generator
+    window.generateStructuredAiExport = function() {
+        const outputField = document.getElementById('export-output');
+        
+        // Compile a clean structural export object for the AI context box
+        const payloadExportBundle = {
+            metadata: {
+                engineType: "Passive Execution Log Array Structure",
+                generatedTimestamp: new Date().toISOString(),
+                interpretationGuide: "Default task state is true (completed). Entries with completed: false indicate active interventions where user skipped or failed to complete their goals. Analyze micro-metrics and fail flags to map behavioral vulnerabilities."
+            },
+            profileDirectoryStructure: masterTasks,
+            historicalTimelineDataLog: executionLogs
+        };
+
+        outputField.value = JSON.stringify(payloadExportBundle, null, 2);
+        outputField.select();
+        alert("JSON Data array bundle successfully assembled and auto-selected. Copy and feed to your analytical modeling engine.");
+    };
+
+    // Boot Routine Ignition Sequence
+    const today = getTodayString();
+    clearAndHydrateDayLog(today);
+    evaluateSystemDayBanner();
+    switchWorkspaceTab('sysadmin');
 </script>
 </body>
 </html>
