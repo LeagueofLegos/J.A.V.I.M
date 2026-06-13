@@ -1,736 +1,129 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Passive Tracker Engine</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --bg: #121212;
-            --card-bg: #1e1e1e;
-            --text: #e0e0e0;
-            --accent: #4ade80;
-            --danger: #ff5f5f;
-            --nav-bg: #2a2a2a;
-            --interactive: #2d2d2d;
-            --selected: #3a3a3a;
-        }
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Sidebar Directory Tree Style Layout */
-        .sidebar {
-            width: 280px;
-            background: #181818;
-            border-right: 1px solid #2d2d2d;
-            display: flex;
-            flex-direction: column;
-            padding: 15px;
-            box-sizing: border-box;
-        }
-        .sidebar h2 {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #666;
-            margin-bottom: 12px;
-            margin-top: 15px;
-        }
-        .sidebar h2:first-of-type { margin-top: 0; }
-        
-        .folder { margin-bottom: 10px; }
-        .folder-title {
-            font-weight: bold;
-            font-size: 0.9rem;
-            padding: 6px;
-            display: flex;
-            align-items: center;
-            color: #b0b0b0;
-        }
-        .file-link {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            margin: 2px 0 2px 15px;
-            border-radius: 4px;
-            color: var(--text);
-            text-decoration: none;
-            font-size: 0.9rem;
-            cursor: pointer;
-            border-left: 2px solid transparent;
-        }
-        .file-link:hover, .file-link.active {
-            background: var(--interactive);
-        }
-        .file-link.active {
-            border-left-color: var(--accent);
-            font-weight: bold;
-        }
-        .delete-btn-sidebar {
-            background: none; border: none; color: #ff5f5f; cursor: pointer; font-size: 1.1rem; padding: 0 4px; line-height: 1;
-        }
-        .delete-btn-sidebar:hover { color: #ff3333 !important; font-weight: bold; }
-
-        /* Creator Panel Inputs */
-        .creator-panel {
-            background: #1f1f1f; padding: 10px; border-radius: 6px; border: 1px solid #333; margin-bottom: 15px;
-        }
-        .creator-panel input, .creator-panel select {
-            width: 100%; box-sizing: border-box; margin-bottom: 8px; font-size: 0.8rem; padding: 6px;
-        }
-
-        /* Main Workspace Container */
-        .workspace {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-        .container {
-            padding: 30px;
-            max-width: 800px;
-            width: 100%;
-            box-sizing: border-box;
-            margin: 0 auto;
-        }
-        
-        .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--accent);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        h1 { margin: 0; font-size: 1.8rem; }
-
-        /* Profile Buttons Bar */
-        .profile-buttons-bar {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #2d2d2d;
-        }
-        .profile-tab-btn {
-            background: var(--card-bg);
-            border: 1px solid #333;
-            color: var(--text);
-            padding: 8px 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-        .profile-tab-btn:hover {
-            background: var(--interactive);
-        }
-        .profile-tab-btn.active {
-            background: var(--accent);
-            color: black;
-            border-color: var(--accent);
-            font-weight: bold;
-        }
-
-        /* Passive Tasks UI Layout */
-        .task-item {
-            display: flex;
-            flex-direction: column;
-            background: var(--card-bg);
-            margin: 10px 0;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #2d2d2d;
-        }
-        .task-main {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .task-content { display: flex; align-items: center; flex: 1; cursor: pointer; }
-        
-        input[type="checkbox"] { 
-            margin-right: 15px; transform: scale(1.3); accent-color: var(--accent); 
-        }
-        
-        .skipped-text { text-decoration: line-through; opacity: 0.4; color: var(--danger); }
-        .passive-status-label {
-            font-size: 0.75rem; text-transform: uppercase; font-weight: bold; padding: 2px 6px; border-radius: 3px; margin-left: 10px;
-        }
-        .status-pass { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
-        .status-fail { background: rgba(255, 95, 95, 0.2); color: var(--danger); }
-
-        /* Specific Micro-Tracking Sub-Forms */
-        .tracking-subform {
-            margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d2d2d; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-        }
-        .tracking-subform label { font-size: 0.8rem; color: #aaa; }
-        
-        /* General Inputs */
-        input[type="text"], input[type="number"], select {
-            padding: 8px; border-radius: 4px; border: 1px solid #444; background: var(--bg); color: white; font-size: 0.85rem;
-        }
-        .btn {
-            padding: 8px 12px; background: var(--accent); border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: black; font-size: 0.85rem;
-        }
-        .btn-secondary { background: #444; color: white; }
-        .btn-danger { background: var(--danger); color: white; }
-
-        /* Panels for Metrics, Search & Analysis Exporting */
-        .panel { margin-top: 25px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid #2d2d2d; }
-        .panel h3 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 8px; }
-        
-        textarea { 
-            width: 100%; height: 120px; background: #0c0c0c; color: #4ade80; border: 1px solid #333; padding: 10px; border-radius: 4px; 
-            font-family: monospace; box-sizing: border-box; resize: vertical; margin-top: 10px;
-        }
-        .search-box { width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 15px; font-size: 0.9rem; }
-        .search-results-list { list-style: none; padding: 0; margin: 0; }
-        .search-results-list li { padding: 8px; background: #151515; border-bottom: 1px solid #222; font-size: 0.85rem; }
-    </style>
-</head>
-<body>
-
-<!-- Sidebar Directory Tree Layout with Profile Generation Tools -->
-<div class="sidebar">
-    <h2>🛠️ Engine Configuration</h2>
-    <div class="creator-panel">
-        <input type="text" id="new-profile-label" placeholder="Profile filename (e.g. daily_routines.cfg)">
-        <select id="new-profile-reset-type" onchange="toggleResetIntervalInput()">
-            <option value="cyclical">Resets Every X Days</option>
-            <option value="never">Persistent (Never Resets)</option>
-        </select>
-        <input type="number" id="new-profile-interval" value="1" min="1" placeholder="Interval (Days)">
-        <button class="btn" style="width:100%;" onclick="createNewProfileNode()">Mount New Profile</button>
-    </div>
-
-    <h2>📁 Workspace Tree</h2>
-    <div class="folder">
-        <div class="folder-title">📁 Mounted Custom Profiles</div>
-        <div id="directory-profiles"></div>
-    </div>
-    
-    <h2>📊 Analysis Engine</h2>
-    <div class="folder">
-        <div class="file-link" id="file-metrics" onclick="scrollToSection('metrics-section')">📄 consistency.log</div>
-        <div class="file-link" id="file-search" onclick="scrollToSection('search-section')">📄 query_history.db</div>
-        <div class="file-link" id="file-export" onclick="scrollToSection('export-section')">📄 ai_export_bundle.json</div>
-    </div>
-</div>
-
-<!-- Core Runtime Dashboard -->
-<div class="workspace">
-    <div class="container">
-        
-        <!-- Profile Dashboard Clickable Buttons Interface -->
-        <div id="profile-buttons-container" class="profile-buttons-bar"></div>
-
-        <!-- Document Header Block -->
-        <div class="header-row">
-            <div>
-                <h1 id="view-title">No Profiles Loaded</h1>
-                <div id="view-meta-rules" style="font-size: 0.8rem; color:#666; margin-top:4px;">Create a custom profile in the configuration sidebar to get started.</div>
-            </div>
-        </div>
-
-        <!-- Task Nodes Target Container -->
-        <div id="checklist"></div>
-
-        <!-- Custom Add Task Row -->
-        <div id="add-task-row" style="margin-top:20px; display:flex; gap:10px; display:none;">
-            <input type="text" id="task-input" placeholder="Append structural log action node to this profile..." style="flex:1;">
-            <select id="task-track-type" style="max-width: 140px;">
-                <option value="none">No Metrics</option>
-                <option value="text">Notes Field</option>
-                <option value="numeric">Number Tracker</option>
-            </select>
-            <button class="btn" onclick="addTaskNode()">Append Node</button>
-        </div>
-
-        <!-- Backup and Sync Management Block -->
-        <div class="panel">
-            <h3>💾 Engine Setup Migration (Export & Import Environment Setup)</h3>
-            <span style="font-size:0.8rem; color:#888; display:block; margin-bottom:10px;">
-                Move your structured profile configurations, interval frameworks, tasks, and full metrics history data across browser spaces or websites instantly.
-            </span>
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <button class="btn btn-secondary" onclick="exportEngineSetup()">Generate Backup Code</button>
-                <button class="btn" onclick="importEngineSetup()">Load Backup Code</button>
-            </div>
-            <textarea id="migration-box" placeholder="Your configuration transmission strings will surface or get pasted here..."></textarea>
-        </div>
-
-        <hr style="border: 0; border-top: 1px solid #333; margin: 40px 0;">
-
-        <!-- Analytics Engine Segment -->
-        <div class="panel" id="metrics-section">
-            <h3>📊 consistency.log (Historical Active Profile Summary)</h3>
-            <canvas id="historyChart" style="max-height: 280px;"></canvas>
-        </div>
-
-        <!-- High-Speed Local Search Tool Segment -->
-        <div class="panel" id="search-section">
-            <h3>🔍 query_history.db (Global Value History Filter)</h3>
-            <input type="text" id="search-input" class="search-box" placeholder="Filter strings, notes, inputs, or execution logs across all custom environments..." oninput="executeDataSearch()">
-            <ul id="search-results" class="search-results-list"></ul>
-        </div>
-
-        <!-- Structured AI Payload Exporter Segment -->
-        <div class="panel" id="export-section">
-            <h3>📦 ai_export_bundle.json (Direct AI Context Weakness Payload)</h3>
-            <span style="font-size:0.8rem; color:#888; display:block; margin-bottom:10px;">
-                Outputs all custom system parameters, intervals, logs, and micro-metric entries as a standardized JSON structure. Paste this chunk straight into your AI workspace to map out long-term execution vulnerabilities.
-            </span>
-            <button class="btn" onclick="generateStructuredAiExport()">Assemble Target Dataset Bundle</button>
-            <textarea id="export-output" readonly placeholder="Click button above to compile structured system data streams..."></textarea>
-        </div>
-
-    </div>
-</div>
-
 <script>
-    // State Hydration Arrays
+    // --- State Initialization ---
     let categories = JSON.parse(localStorage.getItem('dyn_categories')) || {};
     let masterTasks = JSON.parse(localStorage.getItem('dyn_master_tasks')) || {};
-    let executionLogs = JSON.parse(localStorage.getItem('dyn_execution_logs')) || {}; 
-    
-    let currentTab = '';
-    let chartInstance = null;
+    let executionLogs = JSON.parse(localStorage.getItem('dyn_execution_logs')) || {};
+    let lastLogin = localStorage.getItem('last_login') || "";
 
-    function toggleResetIntervalInput() {
-        const select = document.getElementById('new-profile-reset-type');
-        const input = document.getElementById('new-profile-interval');
-        input.style.display = select.value === 'never' ? 'none' : 'block';
-    }
-
-    // High-performance dynamic cycle determination engine
-    function getResetCycleId(catId) {
-        const config = categories[catId];
-        if (!config || config.type === 'never') return 'static_epoch';
-
-        const now = new Date();
-        const adjustedTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
-        const totalDays = Math.floor(adjustedTime.getTime() / (1000 * 60 * 60 * 24));
-        
-        const cycleChunk = Math.floor(totalDays / config.interval);
-        return `cycle_${cycleChunk}`;
-    }
-
-    // Core dynamic profile registration mutator
-    function createNewProfileNode() {
-        const labelInput = document.getElementById('new-profile-label');
-        const typeSelect = document.getElementById('new-profile-reset-type');
-        const intervalInput = document.getElementById('new-profile-interval');
-
-        const rawLabel = labelInput.value.trim();
-        if(!rawLabel) return alert("Enter a distinct target configuration file profile label.");
-
-        const catId = 'prof_' + Date.now();
-        const colors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#ec4899', '#14b8a6'];
-        const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
-        categories[catId] = {
-            label: rawLabel,
-            type: typeSelect.value,
-            interval: typeSelect.value === 'never' ? Infinity : (parseInt(intervalInput.value) || 1),
-            color: randomColor
-        };
-
-        masterTasks[catId] = [];
-        saveStateToLocalStorage();
-
-        labelInput.value = '';
-        renderNavigationControls();
-        switchWorkspaceTab(catId);
-    }
-
-    function deleteProfileNode(catId, event) {
-        if(event) event.stopPropagation();
-        if(confirm(`Completely destroy custom profile "${categories[catId].label}"? All associated target nodes will be scrubbed.`)) {
-            delete categories[catId];
-            delete masterTasks[catId];
-            saveStateToLocalStorage();
+    // --- Core Accountability Engine ---
+    function checkDailyAccountability() {
+        const today = new Date().toISOString().split('T')[0];
+        if (lastLogin !== today) {
+            // Fill gaps if user missed days
+            if (lastLogin !== "") fillMissedDays(lastLogin, today);
             
-            renderNavigationControls();
-            const remaining = Object.keys(categories);
-            if(remaining.length > 0) {
-                switchWorkspaceTab(remaining[0]);
-            } else {
-                currentTab = '';
-                document.getElementById('checklist').innerHTML = '';
-                document.getElementById('view-title').innerText = 'No Profiles Loaded';
-                document.getElementById('view-meta-rules').innerText = 'Create a profile to begin.';
-                document.getElementById('add-task-row').style.display = 'none';
-                if (chartInstance) chartInstance.destroy();
-            }
+            showAccountabilityModal();
+        }
+        localStorage.setItem('last_login', today);
+    }
+
+    function fillMissedDays(start, end) {
+        let d = new Date(start);
+        d.setDate(d.getDate() + 1);
+        while (d.toISOString().split('T')[0] < end) {
+            markAllAsFailed(d.toISOString().split('T')[0]);
+            d.setDate(d.getDate() + 1);
         }
     }
 
-    function saveStateToLocalStorage() {
-        localStorage.setItem('dyn_categories', JSON.stringify(categories));
-        localStorage.setItem('dyn_master_tasks', JSON.stringify(masterTasks));
-        localStorage.setItem('dyn_execution_logs', JSON.stringify(executionLogs));
-    }
-
-    // Passive State Auto-Hydration Machine
-    function clearAndHydrateDayLog(cycleId) {
-        if (!executionLogs[cycleId]) {
-            executionLogs[cycleId] = {};
-        }
-        if (currentTab && !executionLogs[cycleId][currentTab]) {
-            executionLogs[cycleId][currentTab] = {};
-        }
+    function showAccountabilityModal() {
+        const overlay = document.createElement('div');
+        overlay.id = "daily-modal";
+        overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; display:flex; align-items:center; justify-content:center;";
         
-        if (currentTab) {
-            masterTasks[currentTab].forEach(task => {
-                if (executionLogs[cycleId][currentTab][task.id] === undefined) {
-                    executionLogs[cycleId][currentTab][task.id] = {
-                        completed: true,
-                        metricValue: ""
-                    };
-                }
+        let html = `<div style="background:#1e1e1e; padding:30px; border-radius:10px; width:400px; border:1px solid var(--accent);">
+            <h2>Daily Accountability</h2>
+            <p>Did you complete your goals today?</p><div id="modal-tasks">`;
+        
+        Object.keys(categories).forEach(catId => {
+            masterTasks[catId].forEach(task => {
+                html += `<div style="margin:10px 0;">
+                    <input type="checkbox" id="check_${task.id}" checked> ${task.name}
+                </div>`;
             });
-        }
+        });
+        
+        html += `</div><button class="btn" style="width:100%; margin-top:20px;" onclick="submitDailyLog()">Log & Continue</button></div>`;
+        overlay.innerHTML = html;
+        document.body.appendChild(overlay);
+    }
+
+    window.submitDailyLog = function() {
+        const today = new Date().toISOString().split('T')[0];
+        Object.keys(categories).forEach(catId => {
+            masterTasks[catId].forEach(task => {
+                const checked = document.getElementById(`check_${task.id}`).checked;
+                logTask(today, catId, task.id, checked);
+            });
+        });
+        document.getElementById('daily-modal').remove();
+        renderActiveChecklist();
+        updateAnalyticsChart();
+    };
+
+    function logTask(date, catId, taskId, status) {
+        if (!executionLogs[date]) executionLogs[date] = {};
+        if (!executionLogs[date][catId]) executionLogs[date][catId] = {};
+        executionLogs[date][catId][taskId] = { completed: status, metricValue: "" };
         saveStateToLocalStorage();
     }
 
-    // Combined rendering control engine for Sidebar Tree & Main Buttons Layout
-    function renderNavigationControls() {
-        const treeTarget = document.getElementById('directory-profiles');
-        const buttonsTarget = document.getElementById('profile-buttons-container');
-        
-        treeTarget.innerHTML = '';
-        buttonsTarget.innerHTML = '';
-
-        Object.keys(categories).forEach(cat => {
-            const labelText = categories[cat].label;
-
-            // 1. Build out item link within Sidebar Workspace Tree Layout
-            const treeLink = document.createElement('div');
-            treeLink.className = `file-link ${cat === currentTab ? 'active' : ''}`;
-            treeLink.innerHTML = `
-                <span>📄 ${labelText}</span>
-                <button class="delete-btn-sidebar" onclick="deleteProfileNode('${cat}', event)">×</button>
-            `;
-            treeLink.onclick = () => switchWorkspaceTab(cat);
-            treeTarget.appendChild(treeLink);
-
-            // 2. Build click button for main dashboard array interface
-            const dashboardBtn = document.createElement('button');
-            dashboardBtn.className = `profile-tab-btn ${cat === currentTab ? 'active' : ''}`;
-            dashboardBtn.innerHTML = `📄 ${labelText}`;
-            dashboardBtn.onclick = () => switchWorkspaceTab(cat);
-            buttonsTarget.appendChild(dashboardBtn);
+    function markAllAsFailed(date) {
+        Object.keys(categories).forEach(catId => {
+            masterTasks[catId].forEach(task => logTask(date, catId, task.id, false));
         });
     }
 
-    function switchWorkspaceTab(cat) {
-        if(!categories[cat]) return;
-        currentTab = cat;
-        
-        const accentColor = categories[cat].color || '#4ade80';
-        document.documentElement.style.setProperty('--accent', accentColor);
-        
-        document.getElementById('add-task-row').style.display = 'flex';
-        
-        renderNavigationControls();
-        renderActiveChecklist();
-        updateAnalyticsChart();
-    }
-
+    // --- UI Logic (Integrate into your existing script) ---
+    // Update renderActiveChecklist to pull from current date rather than cycle
     function renderActiveChecklist() {
         const container = document.getElementById('checklist');
+        const today = new Date().toISOString().split('T')[0];
         container.innerHTML = '';
         if(!currentTab) return;
 
-        const cycleId = getResetCycleId(currentTab);
-        clearAndHydrateDayLog(cycleId);
-
         const activeTasks = masterTasks[currentTab] || [];
-        const config = categories[currentTab];
-        
-        document.getElementById('view-title').innerText = config.label;
-        document.getElementById('view-meta-rules').innerText = config.type === 'never' 
-            ? `Persistence Strategy: Permanent Database Entry Layer (Never Resets)` 
-            : `Persistence Strategy: Cyclical Interval Loop (Resets Every ${config.interval} Day(s))`;
-
-        if(activeTasks.length === 0) {
-            container.innerHTML = `<div style="color:#666; font-style:italic; padding: 15px; background:var(--card-bg); border-radius:6px;">No structural tracking rows configured in this profile. Append a node below to initiate workflow tracking.</div>`;
-            return;
-        }
-
         activeTasks.forEach((task, index) => {
-            const logEntry = executionLogs[cycleId][currentTab][task.id] || { completed: true, metricValue: "" };
-            const isPassed = logEntry.completed;
-
+            const entry = executionLogs[today]?.[currentTab]?.[task.id] || { completed: true };
             const itemNode = document.createElement('div');
             itemNode.className = 'task-item';
-            
-            let trackingMarkup = '';
-            if (task.trackType !== 'none') {
-                const labelText = task.trackType === 'numeric' ? 'Metrics Count' : 'Context Log Notes';
-                trackingMarkup = `
-                    <div class="tracking-subform">
-                        <label>📈 ${labelText}:</label>
-                        <input type="text" value="${logEntry.metricValue || ''}" 
-                               placeholder="Type metrics values..." 
-                               onchange="updateMetricValue('${cycleId}', '${task.id}', this.value)">
-                    </div>
-                `;
-            }
-
             itemNode.innerHTML = `
                 <div class="task-main">
-                    <div class="task-content" onclick="toggleTaskCompletion('${cycleId}', '${task.id}')">
-                        <input type="checkbox" ${isPassed ? 'checked' : ''}>
-                        <span class="${!isPassed ? 'skipped-text' : ''}">${task.name}</span>
-                        <span class="passive-status-label ${isPassed ? 'status-pass' : 'status-fail'}">
-                            ${isPassed ? 'PASS (AUTO)' : 'SKIPPED/FAILED'}
-                        </span>
+                    <div class="task-content" onclick="toggleTaskCompletion('${today}', '${task.id}')">
+                        <input type="checkbox" ${entry.completed ? 'checked' : ''}>
+                        <span class="${!entry.completed ? 'skipped-text' : ''}">${task.name}</span>
                     </div>
-                    <button class="delete-btn-sidebar" style="font-size:1.3rem;" onclick="deleteTaskNode(${index})">×</button>
-                </div>
-                ${trackingMarkup}
-            `;
+                </div>`;
             container.appendChild(itemNode);
         });
     }
 
-    window.toggleTaskCompletion = function(cycleId, taskId) {
-        const currentStatus = executionLogs[cycleId][currentTab][taskId].completed;
-        executionLogs[cycleId][currentTab][taskId].completed = !currentStatus;
-        
-        saveStateToLocalStorage();
-        renderActiveChecklist();
-        updateAnalyticsChart();
-    };
-
-    window.updateMetricValue = function(cycleId, taskId, value) {
-        executionLogs[cycleId][currentTab][taskId].metricValue = value;
-        saveStateToLocalStorage();
-    };
-
-    window.addTaskNode = function() {
-        const input = document.getElementById('task-input');
-        const typeSelect = document.getElementById('task-track-type');
-        const text = input.value.trim();
-        if(!text || !currentTab) return;
-
-        const newId = `node_${Date.now()}`;
-        masterTasks[currentTab].push({
-            id: newId,
-            name: text,
-            trackType: typeSelect.value
-        });
-
-        input.value = '';
-        const cycleId = getResetCycleId(currentTab);
-        
-        if(executionLogs[cycleId] && executionLogs[cycleId][currentTab]) {
-            executionLogs[cycleId][currentTab][newId] = { completed: true, metricValue: "" };
-        }
-        
-        saveStateToLocalStorage();
-        renderActiveChecklist();
-        updateAnalyticsChart();
-    };
-
-    window.deleteTaskNode = function(index) {
-        if(confirm("Permanently scrub this tracking row item from workspace layouts?")) {
-            masterTasks[currentTab].splice(index, 1);
-            saveStateToLocalStorage();
-            renderActiveChecklist();
-            updateAnalyticsChart();
-        }
-    };
-
-    function scrollToSection(id) {
-        document.querySelectorAll('.file-link').forEach(l => l.classList.remove('active'));
-        document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Engine Core Setup Migration Engines (Export/Import Framework Strings)
-    window.exportEngineSetup = function() {
-        const syncBundle = {
-            categories: categories,
-            masterTasks: masterTasks,
-            executionLogs: executionLogs
-        };
-        // Encode state into clean portable Base64 transmission chunk
-        const base64Code = btoa(encodeURIComponent(JSON.stringify(syncBundle)));
-        document.getElementById('migration-box').value = base64Code;
-        document.getElementById('migration-box').select();
-        alert("System build configuration file code generated and highlighted. Copy and store or paste on your new page workspace.");
-    };
-
-    window.importEngineSetup = function() {
-        const rawCodeString = document.getElementById('migration-box').value.trim();
-        if(!rawCodeString) return alert("Paste a valid framework migration backup code string inside the box area first.");
-
-        try {
-            const decryptedString = decodeURIComponent(atob(rawCodeString));
-            const parsedStateBundle = JSON.parse(decryptedString);
-
-            if(parsedStateBundle.categories && parsedStateBundle.masterTasks && parsedStateBundle.executionLogs) {
-                categories = parsedStateBundle.categories;
-                masterTasks = parsedStateBundle.masterTasks;
-                executionLogs = parsedStateBundle.executionLogs;
-                
-                saveStateToLocalStorage();
-                renderNavigationControls();
-                
-                const profilesList = Object.keys(categories);
-                if(profilesList.length > 0) {
-                    switchWorkspaceTab(profilesList[0]);
-                }
-                alert("Workspace configurations, profiles, custom interval resets, and logs successfully loaded.");
-            } else {
-                throw new Error("Invalid structure format.");
-            }
-        } catch(err) {
-            alert("Parsing Exception: Could not read backup code. Make sure the entire string block was copied cleanly.");
-        }
-    };
-
-    // Analytics Graphical Engine
+    // --- Analytics Update ---
     function updateAnalyticsChart() {
         const ctx = document.getElementById('historyChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
-
-        if (!currentTab || masterTasks[currentTab].length === 0) return;
-
-        const activeTasks = masterTasks[currentTab] || [];
-        const config = categories[currentTab];
         
-        const labels = [];
-        const datasetsMap = {};
-
-        activeTasks.forEach(t => {
-            datasetsMap[t.id] = {
-                label: t.name.substring(0, 20) + '...',
-                data: [],
-                borderColor: '#' + Math.floor(Math.random()*16777215).toString(16),
-                borderWidth: 2,
-                tension: 0.1,
-                fill: false
-            };
-        });
-
-        for (let i = 9; i >= 0; i--) {
-            const d = new Date();
-            let dayOffset = i;
-            if (config.type === 'cyclical') {
-                dayOffset = i * config.interval;
-            }
-            
-            const adj = new Date(d.getTime() - (dayOffset * 24 * 60 * 60 * 1000) - (3 * 60 * 60 * 1000));
-            const totalDays = Math.floor(adj.getTime() / (1000 * 60 * 60 * 24));
-            
-            let targetCycle = 'static_epoch';
-            if (config.type === 'cyclical') {
-                const chunk = Math.floor(totalDays / config.interval);
-                targetCycle = `cycle_${chunk}`;
-            }
-
-            labels.push(config.type === 'never' ? `Log State` : `Cycle -${i}`);
-
-            activeTasks.forEach(t => {
-                const entry = executionLogs[targetCycle]?.[currentTab]?.[t.id];
-                const score = (entry && entry.completed === false) ? 0 : 1;
-                datasetsMap[t.id].data.push(score);
+        const dates = Object.keys(executionLogs).slice(-7);
+        const data = dates.map(date => {
+            let total = 0, completed = 0;
+            Object.keys(executionLogs[date]).forEach(cat => {
+                Object.values(executionLogs[date][cat]).forEach(t => {
+                    total++;
+                    if(t.completed) completed++;
+                });
             });
-        }
+            return total === 0 ? 0 : (completed / total) * 100;
+        });
 
         chartInstance = new Chart(ctx, {
             type: 'line',
-            data: { labels: labels, datasets: Object.values(datasetsMap) },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        min: 0, max: 1,
-                        ticks: { stepSize: 1, callback: (v) => v === 1 ? 'PASS' : 'FAIL', color: '#888' },
-                        grid: { color: '#2d2d2d' }
-                    },
-                    x: { ticks: { color: '#888' }, grid: { display: false } }
-                },
-                plugins: { legend: { display: true, labels: { color: '#aaa', boxWidth: 8, font: { size: 9 } } } }
-            }
+            data: { labels: dates, datasets: [{ label: 'Daily Completion %', data: data, borderColor: '#4ade80' }] },
+            options: { scales: { y: { min: 0, max: 100 } } }
         });
     }
 
-    // High-Performance Query History Deep Filter Engine
-    window.executeDataSearch = function() {
-        const query = document.getElementById('search-input').value.toLowerCase().trim();
-        const resultsTarget = document.getElementById('search-results');
-        resultsTarget.innerHTML = '';
-
-        if(!query) return;
-
-        Object.keys(executionLogs).forEach(cycleId => {
-            const cycleData = executionLogs[cycleId];
-            Object.keys(cycleData).forEach(catKey => {
-                const catLog = cycleData[catKey];
-                const profileMeta = categories[catKey] || { label: "Unknown config" };
-                
-                Object.keys(catLog).forEach(taskId => {
-                    const runItem = catLog[taskId];
-                    const taskMeta = (masterTasks[catKey] || []).find(t => t.id === taskId) || { name: "Archived/Scrubbed Node" };
-                    
-                    const matchText = `${cycleId} ${taskMeta.name} ${runItem.metricValue || ''} ${profileMeta.label}`.toLowerCase();
-                    
-                    if(matchText.includes(query)) {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<strong>[${profileMeta.label.toUpperCase()}]</strong> (${cycleId}) - ${taskMeta.name} ➔ <span style="color:var(--accent);">${runItem.completed !== false ? 'PASSED' : 'SKIPPED'}</span> ${runItem.metricValue ? `(Value: <em>${runItem.metricValue}</em>)` : ''}`;
-                        resultsTarget.appendChild(li);
-                    }
-                });
-            });
-        });
-
-        if(resultsTarget.children.length === 0) {
-            resultsTarget.innerHTML = `<li style="color:#666;">No custom data matching query pattern parameters located.</li>`;
-        }
-    };
-
-    // AI Context Payload Packager
-    window.generateStructuredAiExport = function() {
-        const outputField = document.getElementById('export-output');
-        const payloadExportBundle = {
-            metadata: {
-                engineType: "Dynamic Framework Asset Structure",
-                generatedTimestamp: new Date().toISOString()
-            },
-            profileConfigurations: categories,
-            directoryNodeBlueprints: masterTasks,
-            historicalDatabaseTimeline: executionLogs
-        };
-
-        outputField.value = JSON.stringify(payloadExportBundle, null, 2);
-        outputField.select();
-        alert("Custom dataset array compiled and targeted. Ready to feed directly to your diagnostic AI modeling systems.");
-    };
-
-    // Ignition Boot Sequencer
+    // Initialization
+    checkDailyAccountability();
     renderNavigationControls();
-    const loadedProfiles = Object.keys(categories);
-    if(loadedProfiles.length > 0) {
-        switchWorkspaceTab(loadedProfiles[0]);
-    }
+    if(Object.keys(categories).length > 0) switchWorkspaceTab(Object.keys(categories)[0]);
 </script>
-</body>
-</html>
