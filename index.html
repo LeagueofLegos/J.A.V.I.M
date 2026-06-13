@@ -1,129 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accountability Engine // Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #08080a;
+            --panel: #121217;
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #00ff88;
+            --accent-dim: rgba(0, 255, 136, 0.1);
+            --danger: #ff4655;
+            --text: #e2e2e9;
+            --text-dim: #767685;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Tactical Sidebar */
+        .sidebar {
+            width: 320px;
+            background: #0c0c0f;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            margin: 24px 0 12px 0;
+        }
+
+        .config-box {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        input, select {
+            width: 100%;
+            background: #08080a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: black;
+            border: none;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover { background: #00cc6d; transform: translateY(-1px); }
+
+        .profile-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .profile-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .profile-item:hover, .profile-item.active {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        /* Main Command Deck */
+        .workspace {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view-header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .view-header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            margin: 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            background: var(--accent-dim);
+            color: var(--accent);
+            margin-top: 10px;
+        }
+
+        /* Task Question Cards */
+        .task-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: 0.2s;
+            user-select: none;
+        }
+
+        .task-card.failed {
+            border-color: var(--danger);
+            background: rgba(255, 70, 85, 0.05);
+        }
+
+        .check-box {
+            width: 28px;
+            height: 28px;
+            border: 2px solid var(--accent);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            box-sizing: border-box;
+        }
+
+        .task-card.failed .check-box {
+            border-color: var(--danger);
+        }
+
+        .check-box.checked { background: var(--accent); }
+        .check-box.checked::after { content: '✓'; color: black; font-weight: bold; }
+
+        .task-info { flex: 1; }
+        .task-name { font-size: 18px; font-weight: 600; }
+        .task-meta { font-size: 12px; color: var(--text-dim); }
+
+        /* Graphing Panel */
+        .analytics-box {
+            margin-top: 40px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        canvas { max-height: 300px; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h1 style="font-family:'Orbitron'; font-size: 18px; color: var(--accent); margin: 0;">ENGINE.EXE</h1>
+    
+    <h2>Mount New Profile</h2>
+    <div class="config-box">
+        <input type="text" id="prof-name" placeholder="Profile Name (e.g. Grinding)">
+        <select id="prof-type" onchange="toggleInterval()">
+            <option value="cyclical">Daily/Cyclical Reset</option>
+            <option value="never">Permanent Goal (No Reset)</option>
+        </select>
+        <input type="number" id="prof-int" value="1" placeholder="Days per cycle">
+        <button class="btn" onclick="addProfile()">Initialize</button>
+    </div>
+
+    <h2>Active Profiles</h2>
+    <div id="sidebar-list" class="profile-list"></div>
+</div>
+
+<div class="workspace">
+    <div class="view-header">
+        <h1 id="active-title">Awaiting Initialization</h1>
+        <div id="active-meta" class="status-badge">System Offline</div>
+    </div>
+
+    <div id="task-container">
+        </div>
+
+    <div id="creator-tool" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+        <div style="display:flex; gap: 10px;">
+            <input type="text" id="new-task-name" placeholder="Define critical path task..." style="flex:1; margin-bottom:0;">
+            <button class="btn" style="width: auto;" onclick="addTask()">+ Add Node</button>
+        </div>
+    </div>
+
+    <div class="analytics-box">
+        <h2 style="margin-top:0;">consistency.log // Productivity Data</h2>
+        <div style="position: relative; height:300px; width:100%;">
+            <canvas id="mainChart"></canvas>
+        </div>
+    </div>
+</div>
+
 <script>
-    // --- State Initialization ---
-    let categories = JSON.parse(localStorage.getItem('dyn_categories')) || {};
-    let masterTasks = JSON.parse(localStorage.getItem('dyn_master_tasks')) || {};
-    let executionLogs = JSON.parse(localStorage.getItem('dyn_execution_logs')) || {};
-    let lastLogin = localStorage.getItem('last_login') || "";
+    // Pure, distinct namespace storage retrieval to avoid key collisions
+    let rawState = localStorage.getItem('acc_engine_state_v2');
+    let state;
 
-    // --- Core Accountability Engine ---
-    function checkDailyAccountability() {
-        const today = new Date().toISOString().split('T')[0];
-        if (lastLogin !== today) {
-            // Fill gaps if user missed days
-            if (lastLogin !== "") fillMissedDays(lastLogin, today);
-            
-            showAccountabilityModal();
+    try {
+        let parsed = JSON.parse(rawState);
+        if (parsed && parsed.profiles && parsed.logs) {
+            state = parsed;
+        } else {
+            throw new Error();
         }
-        localStorage.setItem('last_login', today);
+    } catch(e) {
+        state = { profiles: {}, logs: {} };
+        localStorage.setItem('acc_engine_state_v2', JSON.stringify(state));
     }
 
-    function fillMissedDays(start, end) {
-        let d = new Date(start);
-        d.setDate(d.getDate() + 1);
-        while (d.toISOString().split('T')[0] < end) {
-            markAllAsFailed(d.toISOString().split('T')[0]);
-            d.setDate(d.getDate() + 1);
-        }
+    let activeProfileId = null;
+    let chart = null;
+
+    function save() {
+        localStorage.setItem('acc_engine_state_v2', JSON.stringify(state));
     }
 
-    function showAccountabilityModal() {
-        const overlay = document.createElement('div');
-        overlay.id = "daily-modal";
-        overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; display:flex; align-items:center; justify-content:center;";
-        
-        let html = `<div style="background:#1e1e1e; padding:30px; border-radius:10px; width:400px; border:1px solid var(--accent);">
-            <h2>Daily Accountability</h2>
-            <p>Did you complete your goals today?</p><div id="modal-tasks">`;
-        
-        Object.keys(categories).forEach(catId => {
-            masterTasks[catId].forEach(task => {
-                html += `<div style="margin:10px 0;">
-                    <input type="checkbox" id="check_${task.id}" checked> ${task.name}
-                </div>`;
-            });
+    function toggleInterval() {
+        const type = document.getElementById('prof-type').value;
+        document.getElementById('prof-int').style.display = type === 'never' ? 'none' : 'block';
+    }
+
+    function addProfile() {
+        const name = document.getElementById('prof-name').value.trim();
+        if (!name) return alert("Please enter a valid profile name.");
+        const id = 'p_' + Date.now();
+        state.profiles[id] = {
+            name,
+            type: document.getElementById('prof-type').value,
+            interval: parseInt(document.getElementById('prof-int').value) || 1,
+            tasks: []
+        };
+        save();
+        renderSidebar();
+        selectProfile(id);
+        document.getElementById('prof-name').value = '';
+    }
+
+    function addTask() {
+        const name = document.getElementById('new-task-name').value.trim();
+        if (!name || !activeProfileId) return;
+        state.profiles[activeProfileId].tasks.push({
+            id: 't_' + Date.now(),
+            name
         });
+        document.getElementById('new-task-name').value = '';
+        save();
+        renderTasks();
+        updateChart();
+    }
+
+    function getCycleId(profileId) {
+        const p = state.profiles[profileId];
+        if (p.type === 'never') return 'epoch';
         
-        html += `</div><button class="btn" style="width:100%; margin-top:20px;" onclick="submitDailyLog()">Log & Continue</button></div>`;
-        overlay.innerHTML = html;
-        document.body.appendChild(overlay);
+        const now = new Date();
+        const adjusted = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+        const daysSinceEpoch = Math.floor(adjusted.getTime() / (1000 * 60 * 60 * 24));
+        return `cycle_${Math.floor(daysSinceEpoch / p.interval)}`;
     }
 
-    window.submitDailyLog = function() {
-        const today = new Date().toISOString().split('T')[0];
-        Object.keys(categories).forEach(catId => {
-            masterTasks[catId].forEach(task => {
-                const checked = document.getElementById(`check_${task.id}`).checked;
-                logTask(today, catId, task.id, checked);
-            });
+    function toggleTask(taskId) {
+        const cycle = getCycleId(activeProfileId);
+        if (!state.logs[cycle]) state.logs[cycle] = {};
+        if (!state.logs[cycle][activeProfileId]) state.logs[cycle][activeProfileId] = {};
+        
+        // Default execution rules evaluate to true until explicitly toggled off
+        const current = state.logs[cycle][activeProfileId][taskId] !== false; 
+        state.logs[cycle][activeProfileId][taskId] = !current;
+        
+        save();
+        renderTasks();
+        updateChart();
+    }
+
+    function renderSidebar() {
+        const list = document.getElementById('sidebar-list');
+        list.innerHTML = '';
+        Object.keys(state.profiles).forEach(id => {
+            const p = state.profiles[id];
+            const div = document.createElement('div');
+            div.className = `profile-item ${id === activeProfileId ? 'active' : ''}`;
+            div.innerHTML = `<span>${p.name}</span> <span style="color:var(--text-dim); font-size:10px; text-transform:uppercase;">${p.type}</span>`;
+            div.onclick = () => selectProfile(id);
+            list.appendChild(div);
         });
-        document.getElementById('daily-modal').remove();
-        renderActiveChecklist();
-        updateAnalyticsChart();
-    };
-
-    function logTask(date, catId, taskId, status) {
-        if (!executionLogs[date]) executionLogs[date] = {};
-        if (!executionLogs[date][catId]) executionLogs[date][catId] = {};
-        executionLogs[date][catId][taskId] = { completed: status, metricValue: "" };
-        saveStateToLocalStorage();
     }
 
-    function markAllAsFailed(date) {
-        Object.keys(categories).forEach(catId => {
-            masterTasks[catId].forEach(task => logTask(date, catId, task.id, false));
-        });
+    function selectProfile(id) {
+        activeProfileId = id;
+        document.getElementById('creator-tool').style.display = 'block';
+        renderSidebar();
+        renderTasks();
+        updateChart();
     }
 
-    // --- UI Logic (Integrate into your existing script) ---
-    // Update renderActiveChecklist to pull from current date rather than cycle
-    function renderActiveChecklist() {
-        const container = document.getElementById('checklist');
-        const today = new Date().toISOString().split('T')[0];
+    function renderTasks() {
+        const p = state.profiles[activeProfileId];
+        const container = document.getElementById('task-container');
+        document.getElementById('active-title').innerText = p.name;
+        document.getElementById('active-meta').innerText = `Persistence Strategy: ${p.type.toUpperCase()}`;
+        
         container.innerHTML = '';
-        if(!currentTab) return;
+        const cycle = getCycleId(activeProfileId);
 
-        const activeTasks = masterTasks[currentTab] || [];
-        activeTasks.forEach((task, index) => {
-            const entry = executionLogs[today]?.[currentTab]?.[task.id] || { completed: true };
-            const itemNode = document.createElement('div');
-            itemNode.className = 'task-item';
-            itemNode.innerHTML = `
-                <div class="task-main">
-                    <div class="task-content" onclick="toggleTaskCompletion('${today}', '${task.id}')">
-                        <input type="checkbox" ${entry.completed ? 'checked' : ''}>
-                        <span class="${!entry.completed ? 'skipped-text' : ''}">${task.name}</span>
-                    </div>
-                </div>`;
-            container.appendChild(itemNode);
+        p.tasks.forEach(t => {
+            const isPassed = state.logs[cycle]?.[activeProfileId]?.[t.id] !== false;
+            const card = document.createElement('div');
+            card.className = `task-card ${isPassed ? '' : 'failed'}`;
+            // Fixed execution syntax error below by wrapping string token arguments securely inside quotes
+            card.innerHTML = `
+                <div class="check-box ${isPassed ? 'checked' : ''}" onclick="toggleTask('${t.id}')"></div>
+                <div class="task-info">
+                    <div class="task-name">${t.name}</div>
+                    <div class="task-meta">${isPassed ? 'Goal Maintained' : 'GOAL FAILED - ACCOUNTABILITY LOGGED'}</div>
+                </div>
+            `;
+            container.appendChild(card);
         });
     }
 
-    // --- Analytics Update ---
-    function updateAnalyticsChart() {
-        const ctx = document.getElementById('historyChart').getContext('2d');
-        if (chartInstance) chartInstance.destroy();
+    function updateChart() {
+        const canvas = document.getElementById('mainChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (chart) chart.destroy();
+
+        const p = state.profiles[activeProfileId];
+        if (!p || p.tasks.length === 0) return;
+
+        const labels = [];
+        const data = [];
         
-        const dates = Object.keys(executionLogs).slice(-7);
-        const data = dates.map(date => {
-            let total = 0, completed = 0;
-            Object.keys(executionLogs[date]).forEach(cat => {
-                Object.values(executionLogs[date][cat]).forEach(t => {
-                    total++;
-                    if(t.completed) completed++;
-                });
+        for (let i = 6; i >= 0; i--) {
+            const now = new Date();
+            const offset = i * (p.type === 'never' ? 0 : p.interval);
+            const adj = new Date(now.getTime() - (offset * 24 * 60 * 60 * 1000) - (3 * 60 * 60 * 1000));
+            const daysSince = Math.floor(adj.getTime() / (1000 * 60 * 60 * 24));
+            const cId = p.type === 'never' ? 'epoch' : `cycle_${Math.floor(daysSince / p.interval)}`;
+            
+            labels.push(p.type === 'never' ? 'Current State' : `Cycle -${i}`);
+            
+            let passedCount = 0;
+            p.tasks.forEach(t => {
+                if (state.logs[cId]?.[activeProfileId]?.[t.id] !== false) passedCount++;
             });
-            return total === 0 ? 0 : (completed / total) * 100;
-        });
+            data.push((passedCount / p.tasks.length) * 100);
+        }
 
-        chartInstance = new Chart(ctx, {
+        chart = new Chart(ctx, {
             type: 'line',
-            data: { labels: dates, datasets: [{ label: 'Daily Completion %', data: data, borderColor: '#4ade80' }] },
-            options: { scales: { y: { min: 0, max: 100 } } }
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Execution Alignment %',
+                    data,
+                    borderColor: '#00ff88',
+                    backgroundColor: 'rgba(0, 255, 136, 0.05)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.2,
+                    pointBackgroundColor: '#00ff88'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        min: 0, 
+                        max: 100, 
+                        grid: { color: 'rgba(255,255,255,0.04)' }, 
+                        ticks: { color: '#767685', font: { family: 'Space Grotesk' } } 
+                    },
+                    x: { 
+                        grid: { display: false }, 
+                        ticks: { color: '#767685', font: { family: 'Space Grotesk' } } 
+                    }
+                },
+                plugins: { 
+                    legend: { display: false }
+                }
+            }
         });
     }
 
-    // Initialization
-    checkDailyAccountability();
-    renderNavigationControls();
-    if(Object.keys(categories).length > 0) switchWorkspaceTab(Object.keys(categories)[0]);
+    // Run setup on startup
+    renderSidebar();
+    const keys = Object.keys(state.profiles);
+    if (keys.length > 0) {
+        selectProfile(keys[0]);
+    }
 </script>
+</body>
+</html>
