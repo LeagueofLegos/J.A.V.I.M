@@ -17,6 +17,7 @@
             --danger: #ff4655;
             --text: #e2e2e9;
             --text-dim: #767685;
+            --warn: #f59e0b;
         }
 
         body {
@@ -29,7 +30,6 @@
             overflow: hidden;
         }
 
-        /* Tactical Sidebar */
         .sidebar {
             width: 340px;
             background: #0c0c0f;
@@ -57,7 +57,7 @@
             margin-bottom: 10px;
         }
 
-        input, select {
+        input, select, textarea {
             width: 100%;
             background: #08080a;
             border: 1px solid var(--border);
@@ -69,6 +69,8 @@
             box-sizing: border-box;
             font-size: 13px;
         }
+
+        textarea { height: 100px; resize: none; color: var(--accent); font-family: monospace; }
 
         .btn {
             width: 100%;
@@ -84,170 +86,54 @@
             transition: 0.2s;
             font-size: 12px;
         }
-
         .btn:hover { background: #00cc6d; transform: translateY(-1px); }
-        .btn-danger { background: var(--danger); color: white; margin-top: 5px; }
-        .btn-danger:hover { background: #e03e4b; }
+        .btn-secondary { background: #1f1f26; color: white; border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #2a2a35; }
 
-        .profile-list {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 4px;
-        }
+        .profile-list { flex: 1; overflow-y: auto; padding-right: 4px; }
 
-        /* Hierarchy Directory Tree Elements */
-        .folder-block {
-            margin-bottom: 12px;
-            border-left: 1px dashed rgba(255, 255, 255, 0.1);
-            padding-left: 8px;
-        }
+        .folder-block { margin-bottom: 12px; border-left: 1px dashed rgba(255, 255, 255, 0.1); padding-left: 8px; }
+        .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 4px; font-weight: 700; font-size: 13px; color: #f4b400; margin-bottom: 6px; }
 
-        .folder-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 13px;
-            color: #f4b400;
-            margin-bottom: 6px;
-        }
+        .profile-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; cursor: pointer; transition: 0.15s; text-align: left; width: 100%; font-family: inherit; color: inherit; }
+        .profile-item:hover, .profile-item.active { border-color: var(--accent); background: var(--accent-dim); }
+        .item-text-group { display: flex; flex-direction: column; pointer-events: none; }
+        .item-label-meta { color: var(--text-dim); font-size: 9px; text-transform: uppercase; margin-top: 2px; }
 
-        .profile-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 12px;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            margin-bottom: 6px;
-            cursor: pointer;
-            transition: 0.15s;
-            text-align: left;
-            width: 100%;
-            font-family: inherit;
-            color: inherit;
-        }
-
-        .profile-item:hover, .profile-item.active {
-            border-color: var(--accent);
-            background: var(--accent-dim);
-        }
-
-        .item-text-group {
-            display: flex;
-            flex-direction: column;
-            pointer-events: none;
-        }
-
-        .item-label-meta {
-            color: var(--text-dim); 
-            font-size: 9px; 
-            text-transform: uppercase;
-            margin-top: 2px;
-        }
-
-        .scrub-action {
-            background: none;
-            border: none;
-            color: var(--text-dim);
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            padding: 0 4px;
-            transition: color 0.1s;
-        }
+        .scrub-action { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; font-weight: bold; padding: 0 4px; transition: color 0.1s; }
         .scrub-action:hover { color: var(--danger); }
 
-        /* Main Command Deck */
-        .workspace {
-            flex: 1;
-            padding: 40px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
+        /* Mode Selector Engine Layout */
+        .mode-container { display: flex; gap: 8px; background: #0c0c12; padding: 6px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 25px; }
+        .mode-btn { flex: 1; background: none; border: none; color: var(--text-dim); padding: 10px; font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all 0.2s; }
+        .mode-btn.active { background: var(--accent); color: black; }
 
-        .view-header {
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
+        .workspace { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; }
+        .view-header { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 30px; }
+        .view-header h1 { font-family: 'Orbitron', sans-serif; font-size: 28px; margin: 0; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; background: var(--accent-dim); color: var(--accent); margin-top: 10px; }
 
-        .view-header h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 28px;
-            margin: 0;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            background: var(--accent-dim);
-            color: var(--accent);
-            margin-top: 10px;
-        }
-
-        /* Task Question Cards */
-        .task-card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            transition: 0.2s;
-            user-select: none;
-        }
-
-        .task-card.failed {
-            border-color: var(--danger);
-            background: rgba(255, 70, 85, 0.05);
-        }
-
-        .check-box {
-            width: 28px;
-            height: 28px;
-            border: 2px solid var(--accent);
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.2s;
-            box-sizing: border-box;
-        }
-
-        .task-card.failed .check-box {
-            border-color: var(--danger);
-        }
-
+        /* Task Components */
+        .task-card { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 20px; transition: 0.2s; user-select: none; }
+        .task-card.failed { border-color: var(--danger); background: rgba(255, 70, 85, 0.05); }
+        .check-box { width: 28px; height: 28px; border: 2px solid var(--accent); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; box-sizing: border-box; }
+        .task-card.failed .check-box { border-color: var(--danger); }
         .check-box.checked { background: var(--accent); }
         .check-box.checked::after { content: '✓'; color: black; font-weight: bold; }
-
-        .task-info { flex: 1; }
+        .task-info { flex: 1; display: flex; justify-content: space-between; align-items: center; }
         .task-name { font-size: 18px; font-weight: 600; }
         .task-meta { font-size: 12px; color: var(--text-dim); }
 
-        /* Graphing Panel */
-        .analytics-box {
-            margin-top: 40px;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-        }
-
-        canvas { max-height: 300px; }
+        /* Grid Analytics */
+        .analytics-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px; }
+        .analytics-box { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-sizing: border-box; }
+        .stat-card { background: #0c0c10; border: 1px solid var(--border); padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 15px; }
+        .stat-num { font-family: 'Orbitron', sans-serif; font-size: 36px; color: var(--accent); font-weight: bold; }
+        
+        .history-list { list-style: none; padding: 0; margin: 15px 0 0 0; max-height: 200px; overflow-y: auto; }
+        .history-item { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; justify-content: space-between; }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -257,16 +143,14 @@
     
     <h2>Mount Directory Folder</h2>
     <div class="config-box">
-        <input type="text" id="folder-name" placeholder="Folder Name (e.g., Gaming Tech)">
+        <input type="text" id="folder-name" placeholder="Folder Name (e.g., Fighting Games)">
         <button class="btn" onclick="addFolderNode()">Create Folder</button>
     </div>
 
     <h2>Mount New Profile</h2>
     <div class="config-box">
         <input type="text" id="prof-name" placeholder="Profile Name (e.g. Grinding)">
-        <select id="prof-folder-select">
-            <option value="unassigned">-- No Folder (Root) --</option>
-        </select>
+        <select id="prof-folder-select"><option value="unassigned">-- No Folder (Root) --</option></select>
         <select id="prof-type" onchange="toggleInterval()">
             <option value="cyclical">Daily/Cyclical Reset</option>
             <option value="never">Permanent Goal (No Reset)</option>
@@ -280,55 +164,129 @@
 </div>
 
 <div class="workspace">
+    <div class="mode-container">
+        <button class="mode-btn active" id="mode-setup" onclick="setMode('setup')">1. Setup Engine</button>
+        <button class="mode-btn" id="mode-interrogate" onclick="setMode('interrogate')">2. Interrogation Check</button>
+        <button class="mode-btn" id="mode-results" onclick="setMode('results')">3. Metric Results</button>
+    </div>
+
     <div class="view-header">
         <h1 id="active-title">Awaiting Initialization</h1>
         <div id="active-meta" class="status-badge">System Offline</div>
     </div>
 
-    <div id="task-container"></div>
-
-    <div id="creator-tool" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
-        <div style="display:flex; gap: 10px;">
-            <input type="text" id="new-task-name" placeholder="Define critical path task..." style="flex:1; margin-bottom:0;">
-            <button class="btn" style="width: auto;" onclick="addTask()">+ Add Node</button>
+    <div id="setup-section">
+        <div id="setup-task-container"></div>
+        <div id="creator-tool" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+            <div style="display:flex; gap: 10px;">
+                <input type="text" id="new-task-name" placeholder="Append structural log action node to this profile..." style="flex:1; margin-bottom:0;">
+                <button class="btn" style="width: auto;" onclick="addTask()">+ Append Node</button>
+            </div>
         </div>
     </div>
 
-    <div class="analytics-box">
-        <h2 style="margin-top:0;">consistency.log // Productivity Data</h2>
-        <div style="position: relative; height:300px; width:100%;">
-            <canvas id="mainChart"></canvas>
+    <div id="interrogate-section" class="hidden">
+        <div style="background: rgba(245,158,11,0.05); border: 1px solid var(--warn); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #f59e0b;">
+            <strong>INTERROGATION PROTOCOL:</strong> Items default to marked "Complete". Uncheck a card box to acknowledge failure. If you leave this menu without altering logs while goals go neglected, the system registers a "Ghost Login Fail" to catch you hiding from work.
+        </div>
+        <div id="interrogate-task-container"></div>
+    </div>
+
+    <div id="results-section" class="hidden">
+        <div class="analytics-grid">
+            <div class="analytics-box">
+                <h2 style="margin-top:0;">consistency.log // Historical Active Grid</h2>
+                <div style="position: relative; height:280px; width:100%;">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+            <div class="analytics-box" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div class="stat-card">
+                        <div style="font-size:11px; text-transform:uppercase; color:var(--text-dim); letter-spacing:1px;">Active Alignment Streak</div>
+                        <div class="stat-num" id="streak-counter">0 Days</div>
+                    </div>
+                </div>
+                <div>
+                    <button class="btn" onclick="exportDataBundle()">Assemble AI Analytics Payload</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="analytics-box" style="margin-top: 25px;">
+            <h2 style="margin-top:0;">query_history.db // Deep Context Behavioral Log Filter</h2>
+            <input type="text" id="search-input" placeholder="Search patterns across execution logs..." oninput="filterPatterns()">
+            <div class="history-list" id="search-results"></div>
+        </div>
+
+        <div class="analytics-box" style="margin-top:25px;">
+            <h2 style="margin-top:0;">Export Transmission Stream</h2>
+            <textarea id="export-box" readonly placeholder="Compiled AI analytical bundle parameters string array datasets will surface here..."></textarea>
         </div>
     </div>
 </div>
 
 <script>
-    let rawState = localStorage.getItem('acc_engine_state_v3');
+    let rawState = localStorage.getItem('acc_engine_state_v4');
     let state;
 
-    // Namespace hydration mapping check setup
     try {
         let parsed = JSON.parse(rawState);
-        if (parsed && parsed.profiles && parsed.logs && parsed.folders) {
+        if (parsed && parsed.profiles && parsed.logs && parsed.folders && parsed.interactions) {
             state = parsed;
         } else {
             throw new Error();
         }
     } catch(e) {
-        state = { folders: {}, profiles: {}, logs: {} };
-        localStorage.setItem('acc_engine_state_v3', JSON.stringify(state));
+        state = { folders: {}, profiles: {}, logs: {}, interactions: {} }; // interactions[dateStr] = 'login' | 'marked'
+        localStorage.setItem('acc_engine_state_v4', JSON.stringify(state));
     }
 
     let activeProfileId = null;
     let chart = null;
+    let activeMode = 'setup';
 
     function save() {
-        localStorage.setItem('acc_engine_state_v3', JSON.stringify(state));
+        localStorage.setItem('acc_engine_state_v4', JSON.stringify(state));
     }
 
     function toggleInterval() {
         const type = document.getElementById('prof-type').value;
         document.getElementById('prof-int').style.display = type === 'never' ? 'none' : 'block';
+    }
+
+    function setMode(mode) {
+        activeMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`mode-${mode}`).classList.add('active');
+
+        document.getElementById('setup-section').classList.add('hidden');
+        document.getElementById('interrogate-section').classList.add('hidden');
+        document.getElementById('results-section').classList.add('hidden');
+        document.getElementById(`${mode}-section`).classList.remove('hidden');
+
+        logInteraction();
+        if (activeProfileId) {
+            renderSetupView();
+            renderInterrogateView();
+            updateChart();
+            calculateStreak();
+            filterPatterns();
+        }
+    }
+
+    function getDateString() {
+        const now = new Date();
+        const adjusted = new Date(now.getTime() - (3 * 60 * 60 * 1000)); // 3 AM night-owl offset calibration
+        return adjusted.toISOString().split('T')[0];
+    }
+
+    function logInteraction() {
+        const dStr = getDateString();
+        if (!state.interactions[dStr]) {
+            state.interactions[dStr] = 'login'; // Initial entry tracks ghost access behavior pattern defaults
+            save();
+        }
     }
 
     function addFolderNode() {
@@ -343,15 +301,10 @@
 
     function deleteFolderNode(id, event) {
         event.stopPropagation();
-        if (!confirm("Delete this folder? Profiles inside will be unassigned to Root space layout.")) return;
-        
-        // Re-assign orphaned child components back to unassigned space layout safely
+        if (!confirm("Scrub folder? Subitems restore default path layout inside Root namespace wrapper.")) return;
         Object.keys(state.profiles).forEach(pId => {
-            if (state.profiles[pId].folderId === id) {
-                state.profiles[pId].folderId = 'unassigned';
-            }
+            if (state.profiles[pId].folderId === id) state.profiles[pId].folderId = 'unassigned';
         });
-        
         delete state.folders[id];
         save();
         renderSidebar();
@@ -361,16 +314,13 @@
         const name = document.getElementById('prof-name').value.trim();
         if (!name) return alert("Please enter a valid profile name.");
         const id = 'p_' + Date.now();
-        
         state.profiles[id] = {
-            id,
-            name,
+            id, name,
             folderId: document.getElementById('prof-folder-select').value,
             type: document.getElementById('prof-type').value,
             interval: parseInt(document.getElementById('prof-int').value) || 1,
             tasks: []
         };
-        
         save();
         renderSidebar();
         selectProfile(id);
@@ -379,18 +329,17 @@
 
     function deleteProfileNode(id, event) {
         event.stopPropagation();
-        if (!confirm(`Completely scrub profile details and historical tracking indexes?`)) return;
-        
+        if (!confirm("Permanently scrub profile layout and index parameters?")) return;
         delete state.profiles[id];
         if (activeProfileId === id) {
             activeProfileId = null;
             document.getElementById('creator-tool').style.display = 'none';
-            document.getElementById('task-container').innerHTML = '';
+            document.getElementById('setup-task-container').innerHTML = '';
+            document.getElementById('interrogate-task-container').innerHTML = '';
             document.getElementById('active-title').innerText = 'Awaiting Initialization';
             document.getElementById('active-meta').innerText = 'System Offline';
             if (chart) chart.destroy();
         }
-        
         save();
         renderSidebar();
     }
@@ -398,20 +347,22 @@
     function addTask() {
         const name = document.getElementById('new-task-name').value.trim();
         if (!name || !activeProfileId) return;
-        state.profiles[activeProfileId].tasks.push({
-            id: 't_' + Date.now(),
-            name
-        });
+        state.profiles[activeProfileId].tasks.push({ id: 't_' + Date.now(), name });
         document.getElementById('new-task-name').value = '';
         save();
-        renderTasks();
-        updateChart();
+        renderSetupView();
+    }
+
+    function deleteTask(taskId) {
+        if (!confirm("Permanently strip this specific node row component?")) return;
+        state.profiles[activeProfileId].tasks = state.profiles[activeProfileId].tasks.filter(t => t.id !== taskId);
+        save();
+        renderSetupView();
     }
 
     function getCycleId(profileId) {
         const p = state.profiles[profileId];
         if (p.type === 'never') return 'epoch';
-        
         const now = new Date();
         const adjusted = new Date(now.getTime() - (3 * 60 * 60 * 1000));
         const daysSinceEpoch = Math.floor(adjusted.getTime() / (1000 * 60 * 60 * 24));
@@ -426,38 +377,33 @@
         const current = state.logs[cycle][activeProfileId][taskId] !== false; 
         state.logs[cycle][activeProfileId][taskId] = !current;
         
+        // Elevate interaction parameters to acknowledge verified workflow behavior patterns
+        state.interactions[getDateString()] = 'marked';
+        
         save();
-        renderTasks();
-        updateChart();
+        renderInterrogateView();
     }
 
     function selectProfile(id) {
         activeProfileId = id;
         document.getElementById('creator-tool').style.display = 'block';
+        logInteraction();
         renderSidebar();
-        renderTasks();
-        updateChart();
+        setMode(activeMode);
     }
 
     function renderSidebar() {
         const list = document.getElementById('sidebar-list');
         const select = document.getElementById('prof-folder-select');
-        
         list.innerHTML = '';
-        // Re-hydrate folder mounting dropdown field array tracking parameters
         select.innerHTML = '<option value="unassigned">-- No Folder (Root) --</option>';
         
-        // Render folder block groupings
         Object.keys(state.folders).forEach(fId => {
             const f = state.folders[fId];
-            
-            // Populate selector option maps
             const opt = document.createElement('option');
-            opt.value = fId;
-            opt.textContent = f.name;
+            opt.value = fId; opt.textContent = f.name;
             select.appendChild(opt);
 
-            // Generate structural container nodes
             const block = document.createElement('div');
             block.className = 'folder-block';
             block.innerHTML = `
@@ -470,12 +416,10 @@
             list.appendChild(block);
         });
 
-        // Track unassigned configurations targeted to Root framework layers
         const rootContainer = document.createElement('div');
         rootContainer.id = 'container-unassigned';
         list.appendChild(rootContainer);
 
-        // Sort profiles inside their mapped layout structural designations
         Object.keys(state.profiles).forEach(id => {
             const p = state.profiles[id];
             const targetContainerId = p.folderId && state.folders[p.folderId] ? p.folderId : 'unassigned';
@@ -497,12 +441,35 @@
         });
     }
 
-    function renderTasks() {
+    function renderSetupView() {
         const p = state.profiles[activeProfileId];
-        if (!p) return;
-        const container = document.getElementById('task-container');
-        document.getElementById('active-title').innerText = p.name;
-        document.getElementById('active-meta').innerText = `Persistence Strategy: ${p.type.toUpperCase()}`;
+        const container = document.getElementById('setup-task-container');
+        document.getElementById('active-title').innerText = `SETUP // ${p.name}`;
+        document.getElementById('active-meta').innerText = `Persistence Layer Settings: ${p.type.toUpperCase()}`;
+        
+        container.innerHTML = '';
+        if(p.tasks.length === 0) {
+            container.innerHTML = `<div style="color:var(--text-dim); font-size:14px; font-style:italic;">No tracking matrix parameters generated inside this profile. Create node tasks below.</div>`;
+            return;
+        }
+
+        p.tasks.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            card.innerHTML = `
+                <div class="task-info" style="padding-left:10px;">
+                    <div class="task-name">${t.name}</div>
+                    <button class="scrub-action" style="font-size:18px;" onclick="deleteTask('${t.id}')">✕</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function renderInterrogateView() {
+        const p = state.profiles[activeProfileId];
+        const container = document.getElementById('interrogate-task-container');
+        document.getElementById('active-title').innerText = `INTERROGATION // ${p.name}`;
         
         container.innerHTML = '';
         const cycle = getCycleId(activeProfileId);
@@ -515,11 +482,40 @@
                 <div class="check-box ${isPassed ? 'checked' : ''}" onclick="toggleTask('${t.id}')"></div>
                 <div class="task-info">
                     <div class="task-name">${t.name}</div>
-                    <div class="task-meta">${isPassed ? 'Goal Maintained' : 'GOAL FAILED - ACCOUNTABILITY LOGGED'}</div>
+                    <div class="task-meta">${isPassed ? 'Goal Target: MAINTAINED' : 'Acknowledge State: FAILED / SKIPPED'}</div>
                 </div>
             `;
             container.appendChild(card);
         });
+    }
+
+    function calculateStreak() {
+        const p = state.profiles[activeProfileId];
+        if (!p || p.tasks.length === 0) return;
+        
+        let streak = 0;
+        let dayOffset = 0;
+        
+        while (true) {
+            const now = new Date();
+            const adj = new Date(now.getTime() - (dayOffset * 24 * 60 * 60 * 1000) - (3 * 60 * 60 * 1000));
+            const daysSince = Math.floor(adj.getTime() / (1000 * 60 * 60 * 24));
+            const cId = p.type === 'never' ? 'epoch' : `cycle_${Math.floor(daysSince / p.interval)}`;
+            
+            let cyclePassed = true;
+            p.tasks.forEach(t => {
+                if (state.logs[cId]?.[activeProfileId]?.[t.id] === false) cyclePassed = false;
+            });
+
+            if (cyclePassed) {
+                streak++;
+                dayOffset += (p.type === 'never' ? 1 : p.interval);
+                if(p.type === 'never') break; // Epoch tracking stops looping past immediate check evaluations
+            } else {
+                break;
+            }
+        }
+        document.getElementById('streak-counter').innerText = `${streak} Cycles`;
     }
 
     function updateChart() {
@@ -569,29 +565,49 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { 
-                        min: 0, 
-                        max: 100, 
-                        grid: { color: 'rgba(255,255,255,0.04)' }, 
-                        ticks: { color: '#767685', font: { family: 'Space Grotesk' } } 
-                    },
-                    x: { 
-                        grid: { display: false }, 
-                        ticks: { color: '#767685', font: { family: 'Space Grotesk' } } 
-                    }
+                    y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#767685' } },
+                    x: { grid: { display: false }, ticks: { color: '#767685' } }
                 },
-                plugins: { 
-                    legend: { display: false }
-                }
+                plugins: { legend: { display: false } }
             }
         });
     }
 
+    function filterPatterns() {
+        const query = document.getElementById('search-input').value.toLowerCase().trim();
+        const container = document.getElementById('search-results');
+        container.innerHTML = '';
+
+        Object.keys(state.interactions).forEach(date => {
+            const status = state.interactions[date];
+            let labelText = status === 'marked' ? 'VERIFIED WORK ACTIVITY LOGGED' : 'WARNING: GHOST LOGIN DETECTED (access without complete mark-off checks)';
+            let textColor = status === 'marked' ? 'var(--accent)' : 'var(--danger)';
+
+            if (!query || date.includes(query) || labelText.toLowerCase().includes(query)) {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.innerHTML = `<strong>${date}</strong> <span style="color:${textColor};">${labelText}</span>`;
+                container.appendChild(item);
+            }
+        });
+    }
+
+    function exportDataBundle() {
+        const payload = {
+            generationMetadata: { timestamp: new Date().toISOString(), platform: "Accountability Matrix V4 Engine" },
+            directoryProfilesStructure: state.profiles,
+            historicalDatabaseTimelineLogs: state.logs,
+            userInteractionSignatures: state.interactions
+        };
+        const box = document.getElementById('export-box');
+        box.value = JSON.stringify(payload, null, 2);
+        box.select();
+        alert("Unified AI optimization analysis log dataset compiled and highlighted in clipboard memory.");
+    }
+
     renderSidebar();
     const keys = Object.keys(state.profiles);
-    if (keys.length > 0) {
-        selectProfile(keys[0]);
-    }
+    if (keys.length > 0) selectProfile(keys[0]);
 </script>
 </body>
 </html>
