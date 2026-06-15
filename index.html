@@ -90,7 +90,6 @@
         .btn-secondary { background: #1f1f26; color: white; border: 1px solid var(--border); }
         .btn-secondary:hover { background: #2a2a35; }
 
-        /* Scroll Engine Architecture Elements */
         .hierarchy-wrapper {
             flex: 1;
             display: flex;
@@ -120,36 +119,13 @@
             padding-right: 4px;
             scroll-behavior: smooth;
         }
-        /* Hide native ugly scrollbars to make target focus visually cleaner */
         .profile-list::-webkit-scrollbar { width: 0px; }
 
         .folder-block { margin-bottom: 12px; border-left: 1px dashed rgba(255, 255, 255, 0.1); padding-left: 8px; }
-        
-        .folder-header { 
-            display: flex; 
-            align-items: center; 
-            padding: 8px; 
-            background: rgba(255, 255, 255, 0.02); 
-            border: 1px solid var(--border); 
-            border-radius: 4px; 
-            font-weight: 700; 
-            font-size: 13px; 
-            color: #f4b400; 
-            margin-bottom: 6px; 
-            gap: 6px;
-        }
+        .folder-header { display: flex; align-items: center; padding: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 4px; font-weight: 700; font-size: 13px; color: #f4b400; margin-bottom: 6px; gap: 6px; }
 
-        .folder-toggle-btn {
-            background: none;
-            border: none;
-            color: #f4b400;
-            cursor: pointer;
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 3px;
-        }
+        .folder-toggle-btn { background: none; border: none; color: #f4b400; cursor: pointer; font-size: 11px; padding: 2px 6px; border-radius: 3px; }
         .folder-toggle-btn:hover { background: rgba(244, 180, 0, 0.1); }
-
         .folder-title-text { flex: 1; text-align: left; }
 
         .profile-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; cursor: pointer; transition: 0.15s; text-align: left; width: 100%; font-family: inherit; color: inherit; }
@@ -160,7 +136,6 @@
         .scrub-action { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; font-weight: bold; padding: 0 4px; transition: color 0.1s; }
         .scrub-action:hover { color: var(--danger); }
 
-        /* Mode Selector Engine Layout */
         .mode-container { display: flex; gap: 8px; background: #0c0c12; padding: 6px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 25px; }
         .mode-btn { flex: 1; background: none; border: none; color: var(--text-dim); padding: 10px; font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all 0.2s; }
         .mode-btn.active { background: var(--accent); color: black; }
@@ -170,12 +145,12 @@
         .view-header h1 { font-family: 'Orbitron', sans-serif; font-size: 28px; margin: 0; }
         .status-badge { inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; background: var(--accent-dim); color: var(--accent); margin-top: 10px; }
 
-        /* Task Components */
-        .task-card { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 20px; transition: 0.2s; user-select: none; border-left: 4px solid var(--danger); }
+        /* Task Cards Layout Container Styling */
+        .task-card { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; transition: 0.2s; user-select: none; border-left: 4px solid var(--danger); }
         .task-card.verified { border-left-color: var(--accent); }
-        .task-card.failed { border-color: var(--danger); background: rgba(255, 70, 85, 0.05); }
         
-        .check-box { width: 28px; height: 28px; border: 2px solid var(--text-dim); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; box-sizing: border-box; }
+        .task-header-row { display: flex; align-items: center; gap: 20px; width: 100%; }
+        .check-box { width: 28px; height: 28px; border: 2px solid var(--text-dim); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; box-sizing: border-box; flex-shrink: 0; }
         .task-card.verified .check-box { border-color: var(--accent); background: var(--accent); }
         .task-card.verified .check-box::after { content: '✓'; color: black; font-weight: bold; }
 
@@ -184,7 +159,18 @@
         .task-meta { font-size: 12px; color: var(--text-dim); }
         .task-card.verified .task-meta { color: var(--accent); }
 
-        /* Grid Analytics */
+        /* Custom Node Expansion Blocks Styling */
+        .node-details-drawer { display: flex; flex-direction: column; gap: 6px; background: rgba(0, 0, 0, 0.2); padding: 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.03); margin-left: 48px; }
+        .node-desc-text { font-size: 13px; color: #b2b2bd; line-height: 1.5; }
+        
+        .node-meta-link-row { display: flex; gap: 16px; align-items: center; font-size: 12px; margin-top: 4px; }
+        .node-hyperlink { color: var(--accent); font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+        .node-hyperlink:hover { text-decoration: underline; }
+        
+        .node-date-tag { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); color: var(--warn); padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 11px; }
+
+        .creator-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+
         .analytics-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px; }
         .analytics-box { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-sizing: border-box; }
         .stat-card { background: #0c0c10; border: 1px solid var(--border); padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 15px; }
@@ -242,9 +228,16 @@
     <div id="setup-section">
         <div id="setup-task-container"></div>
         <div id="creator-tool" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
-            <div style="display:flex; gap: 10px;">
-                <input type="text" id="new-task-name" placeholder="Append structural log action node to this profile..." style="flex:1; margin-bottom:0;">
-                <button class="btn" style="width: auto;" onclick="addTask()">+ Append Node</button>
+            <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+                <div style="display:flex; gap: 10px;">
+                    <input type="text" id="new-task-name" placeholder="Task Node Label Title (e.g., Practice Anti-Aairs)" style="flex:1; margin-bottom:0;">
+                    <button class="btn" style="width: auto; padding: 0 24px;" onclick="addTask()">+ Append Node</button>
+                </div>
+                <div class="creator-form-grid">
+                    <input type="text" id="new-task-link" placeholder="Optional: Resource Link Address (URL)">
+                    <input type="text" id="new-task-date" placeholder="Optional Target Date (MM/DD/YYYY)" maxlength="10" oninput="applyDateMask(this)">
+                </div>
+                <input type="text" id="new-task-desc" placeholder="Optional Strategy Description / Context Details..." style="margin-bottom:0; margin-top:10px;">
             </div>
         </div>
     </div>
@@ -298,7 +291,6 @@
         let parsed = JSON.parse(rawState);
         if (parsed && parsed.profiles && parsed.logs && parsed.folders && parsed.interactions) {
             state = parsed;
-            // Introduce tracking states for collapsible fields if absent from earlier legacy frameworks
             if (!state.collapsedFolders) state.collapsedFolders = {};
         } else {
             throw new Error();
@@ -314,6 +306,14 @@
 
     function save() {
         localStorage.setItem('acc_engine_state_v4', JSON.stringify(state));
+    }
+
+    // Input mask formatting parameters to assert strict MM/DD/YYYY validation layouts
+    function applyDateMask(input) {
+        let v = input.value.replace(/\D/g, '');
+        if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2);
+        if (v.length > 5) v = v.slice(0, 5) + '/' + v.slice(5, 9);
+        input.value = v;
     }
 
     function toggleInterval() {
@@ -360,7 +360,7 @@
         if (!name) return alert("Please enter a valid folder name.");
         const id = 'f_' + Date.now();
         state.folders[id] = { id, name };
-        state.collapsedFolders[id] = false; // Initialize expanded by default
+        state.collapsedFolders[id] = false; 
         save();
         renderSidebar();
         document.getElementById('folder-name').value = '';
@@ -378,7 +378,6 @@
         renderSidebar();
     }
 
-    // Toggle specific active folder expansion state mappings
     function toggleFolderCollapse(id, event) {
         event.stopPropagation();
         state.collapsedFolders[id] = !state.collapsedFolders[id];
@@ -386,22 +385,16 @@
         renderSidebar();
     }
 
-    // Discrete Programmatic Sidebar Scroll Engine mapped safely for keyboard access hooks
     function programmaticSidebarScroll(direction) {
         const container = document.getElementById('sidebar-list');
         if (!container) return;
-        
-        // Find visible interactive elements inside the viewport mapping boundary
         const items = Array.from(container.querySelectorAll('.profile-item, .folder-header'));
         if (items.length === 0) return;
 
         let targetIndex = direction > 0 ? 0 : items.length - 1;
-        
-        // Locate current focal index alignments based on bounding limits
         for (let i = 0; i < items.length; i++) {
             const rect = items[i].getBoundingClientRect();
             const parentRect = container.getBoundingClientRect();
-            
             if (direction > 0 && rect.top > parentRect.top + 5) {
                 targetIndex = i;
                 break;
@@ -410,7 +403,6 @@
                 break;
             }
         }
-        
         if (items[targetIndex]) {
             container.scrollTop = (items[targetIndex].offsetTop - container.offsetTop);
         }
@@ -452,9 +444,24 @@
 
     function addTask() {
         const name = document.getElementById('new-task-name').value.trim();
+        const link = document.getElementById('new-task-link').value.trim();
+        const date = document.getElementById('new-task-date').value.trim();
+        const desc = document.getElementById('new-task-desc').value.trim();
+        
         if (!name || !activeProfileId) return;
-        state.profiles[activeProfileId].tasks.push({ id: 't_' + Date.now(), name });
+        
+        state.profiles[activeProfileId].tasks.push({ 
+            id: 't_' + Date.now(), 
+            name,
+            link,
+            date,
+            desc
+        });
+        
         document.getElementById('new-task-name').value = '';
+        document.getElementById('new-task-link').value = '';
+        document.getElementById('new-task-date').value = '';
+        document.getElementById('new-task-desc').value = '';
         save();
         renderSetupView();
     }
@@ -513,8 +520,6 @@
 
             const block = document.createElement('div');
             block.className = 'folder-block';
-            
-            // Re-engineered semantic structure using action buttons targetable by extension tools natively
             block.innerHTML = `
                 <div class="folder-header">
                     <button class="folder-toggle-btn" onclick="toggleFolderCollapse('${fId}', event)">${toggleIcon}</button>
@@ -566,11 +571,28 @@
         p.tasks.forEach(t => {
             const card = document.createElement('div');
             card.className = 'task-card';
+            
+            let setupDetailsBlock = '';
+            if (t.desc || t.link || t.date) {
+                setupDetailsBlock = `
+                    <div class="node-details-drawer">
+                        ${t.desc ? `<div class="node-desc-text">${t.desc}</div>` : ''}
+                        <div class="node-meta-link-row">
+                            ${t.link ? `<span class="node-hyperlink" style="color:var(--text-dim);">🔗 Link Loaded</span>` : ''}
+                            ${t.date ? `<span class="node-date-tag">📅 Target: ${t.date}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
-                <div class="task-info" style="padding-left:10px;">
-                    <div class="task-name">${t.name}</div>
-                    <button class="scrub-action" style="font-size:18px;" onclick="deleteTask('${t.id}')">✕</button>
+                <div class="task-header-row">
+                    <div class="task-info" style="padding-left:10px;">
+                        <div class="task-name">${t.name}</div>
+                        <button class="scrub-action" style="font-size:18px;" onclick="deleteTask('${t.id}')">✕</button>
+                    </div>
                 </div>
+                ${setupDetailsBlock}
             `;
             container.appendChild(card);
         });
@@ -588,12 +610,29 @@
             const isCompleted = state.logs[cycle]?.[activeProfileId]?.[t.id] === true;
             const card = document.createElement('div');
             card.className = `task-card ${isCompleted ? 'verified' : 'failed'}`;
+            
+            let interrogateDetailsBlock = '';
+            if (t.desc || t.link || t.date) {
+                interrogateDetailsBlock = `
+                    <div class="node-details-drawer">
+                        ${t.desc ? `<div class="node-desc-text">${t.desc}</div>` : ''}
+                        <div class="node-meta-link-row">
+                            ${t.link ? `<a href="${t.link.match(/^https?:\/\//) ? t.link : 'https://' + t.link}" target="_blank" class="node-hyperlink">🔗 Launch Tech Reference</a>` : ''}
+                            ${t.date ? `<span class="node-date-tag" style="cursor:pointer;">📅 ${t.date}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
-                <div class="check-box" onclick="toggleTask('${t.id}')"></div>
-                <div class="task-info">
-                    <div class="task-name">${t.name}</div>
-                    <div class="task-meta">${isCompleted ? 'Goal Target: MAINTAINED' : 'Acknowledge State: INCOMPLETE / PENDING'}</div>
+                <div class="task-header-row">
+                    <div class="check-box" onclick="toggleTask('${t.id}')"></div>
+                    <div class="task-info">
+                        <div class="task-name">${t.name}</div>
+                        <div class="task-meta">${isCompleted ? 'Goal Target: MAINTAINED' : 'Acknowledge State: INCOMPLETE / PENDING'}</div>
+                    </div>
                 </div>
+                ${interrogateDetailsBlock}
             `;
             container.appendChild(card);
         });
