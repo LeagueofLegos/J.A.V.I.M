@@ -90,10 +90,67 @@
         .btn-secondary { background: #1f1f26; color: white; border: 1px solid var(--border); }
         .btn-secondary:hover { background: #2a2a35; }
 
-        .profile-list { flex: 1; overflow-y: auto; padding-right: 4px; }
+        /* Scroll Engine Architecture Elements */
+        .hierarchy-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .scroll-nav-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 2px 0;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .scroll-nav-btn:hover { background: var(--accent-dim); }
+
+        .profile-list { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding-right: 4px;
+            scroll-behavior: smooth;
+        }
+        /* Hide native ugly scrollbars to make target focus visually cleaner */
+        .profile-list::-webkit-scrollbar { width: 0px; }
 
         .folder-block { margin-bottom: 12px; border-left: 1px dashed rgba(255, 255, 255, 0.1); padding-left: 8px; }
-        .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 4px; font-weight: 700; font-size: 13px; color: #f4b400; margin-bottom: 6px; }
+        
+        .folder-header { 
+            display: flex; 
+            align-items: center; 
+            padding: 8px; 
+            background: rgba(255, 255, 255, 0.02); 
+            border: 1px solid var(--border); 
+            border-radius: 4px; 
+            font-weight: 700; 
+            font-size: 13px; 
+            color: #f4b400; 
+            margin-bottom: 6px; 
+            gap: 6px;
+        }
+
+        .folder-toggle-btn {
+            background: none;
+            border: none;
+            color: #f4b400;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .folder-toggle-btn:hover { background: rgba(244, 180, 0, 0.1); }
+
+        .folder-title-text { flex: 1; text-align: left; }
 
         .profile-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; cursor: pointer; transition: 0.15s; text-align: left; width: 100%; font-family: inherit; color: inherit; }
         .profile-item:hover, .profile-item.active { border-color: var(--accent); background: var(--accent-dim); }
@@ -111,7 +168,7 @@
         .workspace { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; }
         .view-header { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 30px; }
         .view-header h1 { font-family: 'Orbitron', sans-serif; font-size: 28px; margin: 0; }
-        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; background: var(--accent-dim); color: var(--accent); margin-top: 10px; }
+        .status-badge { inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; background: var(--accent-dim); color: var(--accent); margin-top: 10px; }
 
         /* Task Components */
         .task-card { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 20px; transition: 0.2s; user-select: none; border-left: 4px solid var(--danger); }
@@ -163,7 +220,11 @@
     </div>
 
     <h2>Active Hierarchy</h2>
-    <div id="sidebar-list" class="profile-list"></div>
+    <div class="hierarchy-wrapper">
+        <button class="scroll-nav-btn" onclick="programmaticSidebarScroll(-1)">▲ Scroll Unit Up</button>
+        <div id="sidebar-list" class="profile-list"></div>
+        <button class="scroll-nav-btn" onclick="programmaticSidebarScroll(1)">▼ Scroll Unit Down</button>
+    </div>
 </div>
 
 <div class="workspace">
@@ -237,11 +298,13 @@
         let parsed = JSON.parse(rawState);
         if (parsed && parsed.profiles && parsed.logs && parsed.folders && parsed.interactions) {
             state = parsed;
+            // Introduce tracking states for collapsible fields if absent from earlier legacy frameworks
+            if (!state.collapsedFolders) state.collapsedFolders = {};
         } else {
             throw new Error();
         }
     } catch(e) {
-        state = { folders: {}, profiles: {}, logs: {}, interactions: {} };
+        state = { folders: {}, profiles: {}, logs: {}, interactions: {}, collapsedFolders: {} };
         localStorage.setItem('acc_engine_state_v4', JSON.stringify(state));
     }
 
@@ -297,6 +360,7 @@
         if (!name) return alert("Please enter a valid folder name.");
         const id = 'f_' + Date.now();
         state.folders[id] = { id, name };
+        state.collapsedFolders[id] = false; // Initialize expanded by default
         save();
         renderSidebar();
         document.getElementById('folder-name').value = '';
@@ -309,8 +373,47 @@
             if (state.profiles[pId].folderId === id) state.profiles[pId].folderId = 'unassigned';
         });
         delete state.folders[id];
+        delete state.collapsedFolders[id];
         save();
         renderSidebar();
+    }
+
+    // Toggle specific active folder expansion state mappings
+    function toggleFolderCollapse(id, event) {
+        event.stopPropagation();
+        state.collapsedFolders[id] = !state.collapsedFolders[id];
+        save();
+        renderSidebar();
+    }
+
+    // Discrete Programmatic Sidebar Scroll Engine mapped safely for keyboard access hooks
+    function programmaticSidebarScroll(direction) {
+        const container = document.getElementById('sidebar-list');
+        if (!container) return;
+        
+        // Find visible interactive elements inside the viewport mapping boundary
+        const items = Array.from(container.querySelectorAll('.profile-item, .folder-header'));
+        if (items.length === 0) return;
+
+        let targetIndex = direction > 0 ? 0 : items.length - 1;
+        
+        // Locate current focal index alignments based on bounding limits
+        for (let i = 0; i < items.length; i++) {
+            const rect = items[i].getBoundingClientRect();
+            const parentRect = container.getBoundingClientRect();
+            
+            if (direction > 0 && rect.top > parentRect.top + 5) {
+                targetIndex = i;
+                break;
+            } else if (direction < 0 && rect.top >= parentRect.top - 5) {
+                targetIndex = Math.max(0, i - 1);
+                break;
+            }
+        }
+        
+        if (items[targetIndex]) {
+            container.scrollTop = (items[targetIndex].offsetTop - container.offsetTop);
+        }
     }
 
     function addProfile() {
@@ -377,10 +480,8 @@
         if (!state.logs[cycle]) state.logs[cycle] = {};
         if (!state.logs[cycle][activeProfileId]) state.logs[cycle][activeProfileId] = {};
         
-        // Changed state valuation mechanics: items now evaluate as false (incomplete) unless explicitly logged as true.
         const current = state.logs[cycle][activeProfileId][taskId] === true; 
         state.logs[cycle][activeProfileId][taskId] = !current;
-        
         state.interactions[getDateString()] = 'marked';
         
         save();
@@ -407,14 +508,20 @@
             opt.value = fId; opt.textContent = f.name;
             select.appendChild(opt);
 
+            const isCollapsed = state.collapsedFolders[fId] === true;
+            const toggleIcon = isCollapsed ? '▶' : '▼';
+
             const block = document.createElement('div');
             block.className = 'folder-block';
+            
+            // Re-engineered semantic structure using action buttons targetable by extension tools natively
             block.innerHTML = `
                 <div class="folder-header">
-                    <span>📁 ${f.name}</span>
+                    <button class="folder-toggle-btn" onclick="toggleFolderCollapse('${fId}', event)">${toggleIcon}</button>
+                    <span class="folder-title-text">📁 ${f.name}</span>
                     <button class="scrub-action" onclick="deleteFolderNode('${fId}', event)">✕</button>
                 </div>
-                <div id="container-${fId}"></div>
+                <div id="container-${fId}" class="${isCollapsed ? 'hidden' : ''}"></div>
             `;
             list.appendChild(block);
         });
@@ -478,7 +585,6 @@
         const cycle = getCycleId(activeProfileId);
 
         p.tasks.forEach(t => {
-            // Evaluates strict equality against true value parameters now
             const isCompleted = state.logs[cycle]?.[activeProfileId]?.[t.id] === true;
             const card = document.createElement('div');
             card.className = `task-card ${isCompleted ? 'verified' : 'failed'}`;
@@ -513,7 +619,6 @@
             
             let cyclePassed = p.tasks.length > 0;
             p.tasks.forEach(t => {
-                // Must evaluate explicitly as verified to build dynamic streak records
                 if (state.logs[cId]?.[activeProfileId]?.[t.id] !== true) cyclePassed = false;
             });
 
