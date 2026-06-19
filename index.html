@@ -238,7 +238,10 @@
                 </div>
                 <div class="creator-form-grid">
                     <input type="text" id="new-task-link" placeholder="Optional: Resource Link Address (URL)">
-                    <input type="text" id="new-task-date" placeholder="Optional Target Date (MM/DD/YYYY)" maxlength="10" oninput="applyDateMask(this)">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="date" id="new-task-date" style="flex: 2; margin-bottom: 0;">
+                        <input type="time" id="new-task-time" style="flex: 1; margin-bottom: 0;">
+                    </div>
                 </div>
                 <input type="text" id="new-task-desc" placeholder="Optional Strategy Description / Context Details..." style="margin-bottom:0; margin-top:10px;">
             </div>
@@ -319,13 +322,6 @@
 
     function save() {
         localStorage.setItem('acc_engine_state_v4', JSON.stringify(state));
-    }
-
-    function applyDateMask(input) {
-        let v = input.value.replace(/\D/g, '');
-        if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2);
-        if (v.length > 5) v = v.slice(0, 5) + '/' + v.slice(5, 9);
-        input.value = v;
     }
 
     function toggleInterval() {
@@ -473,22 +469,48 @@
         window.open(formatted, '_blank');
     }
 
+    function formatBadgeDateTime(dateVal, timeVal) {
+        if (!dateVal) return '';
+        
+        let displayStr = '';
+        // Convert YYYY-MM-DD to standard format
+        const parts = dateVal.split('-');
+        if(parts.length === 3) {
+            displayStr += `${parts[1]}/${parts[2]}/${parts[0]}`;
+        } else {
+            displayStr += dateVal;
+        }
+
+        if (timeVal) {
+            const timeParts = timeVal.split(':');
+            let hours = parseInt(timeParts[0]);
+            const minutes = timeParts[1];
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // 0 matches 12
+            displayStr += ` @ ${hours}:${minutes} ${ampm}`;
+        }
+        return displayStr;
+    }
+
     function addTask() {
         const name = document.getElementById('new-task-name').value.trim();
         const link = document.getElementById('new-task-link').value.trim();
-        const date = document.getElementById('new-task-date').value.trim();
+        const date = document.getElementById('new-task-date').value;
+        const time = document.getElementById('new-task-time').value;
         const desc = document.getElementById('new-task-desc').value.trim();
         
         if (!name || !activeProfileId) return;
         
         state.profiles[activeProfileId].tasks.push({ 
             id: 't_' + Date.now(), 
-            name, link, date, desc
+            name, link, date, time, desc
         });
         
         document.getElementById('new-task-name').value = '';
         document.getElementById('new-task-link').value = '';
         document.getElementById('new-task-date').value = '';
+        document.getElementById('new-task-time').value = '';
         document.getElementById('new-task-desc').value = '';
         save();
         renderSetupView();
@@ -597,12 +619,13 @@
             
             let setupDetailsBlock = '';
             if (t.desc || t.link || t.date) {
+                const badgeDateTime = formatBadgeDateTime(t.date, t.time);
                 setupDetailsBlock = `
                     <div class="node-details-drawer">
                         ${t.desc ? `<div class="node-desc-text">${t.desc}</div>` : ''}
                         <div class="node-meta-link-row">
                             ${t.link ? `<button class="node-hyperlink" onclick="safelyLaunchTargetUrl('${t.link}')">🔗 Link Loaded</button>` : ''}
-                            ${t.date ? `<span class="node-date-tag">📅 Target: ${t.date}</span>` : ''}
+                            ${badgeDateTime ? `<span class="node-date-tag">📅 Target: ${badgeDateTime}</span>` : ''}
                         </div>
                     </div>
                 `;
@@ -640,12 +663,13 @@
             
             let interrogateDetailsBlock = '';
             if (t.desc || t.link || t.date) {
+                const badgeDateTime = formatBadgeDateTime(t.date, t.time);
                 interrogateDetailsBlock = `
                     <div class="node-details-drawer">
                         ${t.desc ? `<div class="node-desc-text">${t.desc}</div>` : ''}
                         <div class="node-meta-link-row">
                             ${t.link ? `<a href="${t.link.match(/^https?:\/\//) ? t.link : 'https://' + t.link}" target="_blank" class="node-hyperlink">🔗 Launch Tech Reference</a>` : ''}
-                            ${t.date ? `<span class="node-date-tag" style="cursor:pointer;">📅 ${t.date}</span>` : ''}
+                            ${badgeDateTime ? `<span class="node-date-tag">📅 ${badgeDateTime}</span>` : ''}
                         </div>
                     </div>
                 `;
@@ -853,7 +877,6 @@
         
         if (!confirmation) return;
 
-        // 1. Snapshot the complete setup snapshot data before blowing it up
         const structuralRunSnapshot = {
             generationIndex: `V${state.generationVersion}`,
             timestamp: new Date().toISOString(),
@@ -863,10 +886,8 @@
             interactions: JSON.parse(JSON.stringify(state.interactions))
         };
 
-        // 2. Commit snap snapshot record into permanent app archives state
         state.archives.push(structuralRunSnapshot);
 
-        // 3. Compile full cross-generational analytical string payload array back out
         const payload = {
             metadata: { 
                 compiledAt: new Date().toISOString(), 
@@ -888,20 +909,15 @@
             navigator.clipboard.writeText(box.value);
         } catch (err) {}
 
-        // 4. Wipe active application properties straight down to pure zero
         state.folders = {};
         state.profiles = {};
         state.logs = {};
         state.interactions = {};
         state.collapsedFolders = {};
         
-        // Increment the run tracker counter
         state.generationVersion += 1;
-        
-        // Commit wiped state structure safely back to browser disk storage
         save();
         
-        // 5. Hard break active view indices and reset viewport parameters
         activeProfileId = null;
         if (chart) chart.destroy();
         destroySingleNodeCharts();
