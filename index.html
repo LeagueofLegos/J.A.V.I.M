@@ -268,7 +268,7 @@
                     </div>
                 </div>
                 <div>
-                    <button class="btn" onclick="exportDataBundle()">Assemble AI Analytics Payload</button>
+                    <button class="btn" style="background: var(--warn); color: black;" onclick="exportDataBundle()">Assemble AI Analytics Payload</button>
                     <button class="btn btn-secondary" style="margin-top:8px;" onclick="triggerNativeJsonDownload()">Export Data To JSON File</button>
                     <input type="file" id="import-json-file" style="display:none;" onchange="triggerNativeJsonImport(this)">
                     <button class="btn btn-secondary" style="margin-top:8px;" onclick="document.getElementById('import-json-file').click()">Import & Merge JSON File</button>
@@ -825,16 +825,54 @@
     }
 
     function exportDataBundle() {
+        if (!activeProfileId) return alert("Select a profile to analyze and reset.");
+        
+        const p = state.profiles[activeProfileId];
+        
+        // Roguelike Warning Check
+        const confirmation = confirm(
+            `⚠️ ROGUELIKE EXECUTION PROTOCOL ACTIVATED ⚠️\n\n` +
+            `Assembling the analytics payload for profile [${p.name}] will automatically SCRUB all current task node baselines to force a foundational foundation restart.\n\n` +
+            `Your historical database log files will remain preserved in the micro-logs matrix.\n\n` +
+            `Do you confirm the reset of this build run?`
+        );
+        
+        if (!confirmation) return;
+
         const payload = {
-            generationMetadata: { timestamp: new Date().toISOString(), platform: "Accountability Matrix V4 Engine" },
-            directoryProfilesStructure: state.profiles,
+            generationMetadata: { 
+                timestamp: new Date().toISOString(), 
+                platform: "Accountability Matrix V4 Roguelike Engine",
+                runStatus: "COMPLETED / RETIRED"
+            },
+            profileStructureSnapshot: {
+                id: p.id,
+                name: p.name,
+                type: p.type,
+                interval: p.interval,
+                retiredTasks: [...p.tasks]
+            },
             historicalDatabaseTimelineLogs: state.logs,
             userInteractionSignatures: state.interactions
         };
+        
         const box = document.getElementById('export-box');
         box.value = JSON.stringify(payload, null, 2);
         box.select();
-        alert("Unified AI optimization analysis log dataset compiled and highlighted in clipboard memory.");
+        
+        try {
+            navigator.clipboard.writeText(box.value);
+        } catch (err) {
+            // Fallback strategy if clip mechanics fail
+        }
+
+        // Hard reset active profile's foundation build array
+        p.tasks = [];
+        save();
+        
+        // Re-sync UI layers down the execution cascade
+        alert("Unified analysis log compiled, loaded into clipboard memory, and foundation layout cleanly wiped. Build your next run.");
+        setMode('setup');
     }
 
     function triggerNativeJsonDownload() {
