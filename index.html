@@ -146,8 +146,9 @@
         .view-header h1 { font-family: 'Orbitron', sans-serif; font-size: 28px; margin: 0; }
         .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; background: var(--accent-dim); color: var(--accent); margin-top: 10px; }
 
-        .task-card { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; transition: 0.2s; user-select: none; border-left: 4px solid var(--danger); }
+        .task-card { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; transition: 0.2s; user-select: none; border-left: 4px solid var(--danger); outline: none; }
         .task-card.verified { border-left-color: var(--accent); }
+        .task-card.vim-focused { border-color: var(--accent); box-shadow: 0 0 10px rgba(0, 255, 136, 0.2); background: rgba(255, 255, 255, 0.02); }
         
         .task-header-row { display: flex; align-items: center; gap: 20px; width: 100%; }
         .check-box { width: 28px; height: 28px; border: 2px solid var(--text-dim); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; box-sizing: border-box; flex-shrink: 0; }
@@ -183,6 +184,10 @@
         .history-item { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; justify-content: space-between; }
         
         .hidden { display: none !important; }
+
+        .search-container { margin-bottom: 20px; position: relative; }
+        .search-container input { padding-left: 36px; color: var(--accent); font-family: monospace; }
+        .search-container::before { content: '/'; position: absolute; left: 14px; top: 10px; color: var(--text-dim); font-family: monospace; font-size: 14px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -230,8 +235,8 @@
     </div>
 
     <div id="home-section">
-        <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid var(--accent); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: var(--accent);">
-            <strong>QUICK VIEW PANEL:</strong> High priority upcoming targets and daily tracking tasks sorted dynamically by immediate operational relevance.
+        <div class="search-container">
+            <input type="text" id="home-search-bar" placeholder="Filter parameters by profile context... (Press '/' to isolate, 'j/k' to navigate list results)" oninput="renderHomeView()">
         </div>
         <div id="home-task-container"></div>
     </div>
@@ -331,6 +336,7 @@
     let chart = null;
     let singleNodeChartInstances = {}; 
     let activeMode = 'home';
+    let vimFocusedIndex = -1; // Vim navigation tracking parameter
 
     function save() {
         localStorage.setItem('acc_engine_state_v4', JSON.stringify(state));
@@ -361,6 +367,7 @@
         updateGenerationLabel();
         
         if (mode === 'home') {
+            vimFocusedIndex = -1;
             renderHomeView();
         } else if (activeProfileId) {
             renderSetupView();
@@ -632,36 +639,42 @@
         document.getElementById('active-title').innerText = `HQ // OPERATIONS OVERVIEW`;
         document.getElementById('active-meta').innerText = `System Online // Aggregated Dash`;
         const container = document.getElementById('home-task-container');
-        container.innerHTML = '';
-
+        
         const todayStr = getDateString();
+        const searchInput = document.getElementById('home-search-bar');
+        const filterText = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        
+        container.innerHTML = '';
         let homeDisplayArray = [];
 
         Object.keys(state.profiles).forEach(pId => {
             const p = state.profiles[pId];
+            
+            // Check if profile match filtering text parameter
+            if (filterText && !p.name.toLowerCase().includes(filterText)) return;
+
             p.tasks.forEach(t => {
                 let isCompletedToday = state.logs[todayStr]?.[pId]?.[t.id] === true;
-                if (isCompletedToday) return; // Drop completed assets off dashboard view
+                if (isCompletedToday) return; 
 
-                let priorityWeight = 3; // Default baseline bucket assignment
+                let priorityWeight = 3; 
                 let daysLeft = null;
 
                 if (t.date) {
                     const diffTime = new Date(t.date) - new Date(todayStr);
                     daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                     
-                    // Rule: Tasks 1 day away, due today, or overdue warp instantly to position 1
                     if (daysLeft <= 1) {
                         priorityWeight = 1;
                     } else if (daysLeft <= 3) {
-                        priorityWeight = 3; // Keep on dashboard but lower than active cyclicals
+                        priorityWeight = 3; 
                     } else {
-                        return; // Out of horizon limits completely
+                        return; 
                     }
                 } else if (p.type === 'cyclical') {
-                    priorityWeight = 2; // Resets every day
+                    priorityWeight = 2; 
                 } else if (p.type === 'never') {
-                    priorityWeight = 4; // Permanent benchmarks go to the floor
+                    priorityWeight = 4; 
                 }
 
                 homeDisplayArray.push({ task: t, profile: p, weight: priorityWeight, daysLeft: daysLeft });
@@ -669,23 +682,29 @@
         });
 
         if (homeDisplayArray.length === 0) {
-            container.innerHTML = `<div style="color:var(--text-dim); font-size:14px; font-style:italic;">No active structural execution parameters found for sorting. System clear.</div>`;
+            container.innerHTML = `<div style="color:var(--text-dim); font-size:14px; font-style:italic;">No active structural execution parameters found matching filter limits.</div>`;
             return;
         }
 
-        // Sort execution logic: Smallest weight number takes primary real estate. Chronological sort for matching date tags.
         homeDisplayArray.sort((a, b) => {
             if (a.weight !== b.weight) return a.weight - b.weight;
             if (a.task.date && b.task.date) return a.task.date > b.task.date ? 1 : -1;
             return 0;
         });
 
-        homeDisplayArray.forEach(item => {
+        // Boundary safety check for keyboard list mapping indexes
+        if (vimFocusedIndex >= homeDisplayArray.length) {
+            vimFocusedIndex = homeDisplayArray.length - 1;
+        }
+
+        homeDisplayArray.forEach((item, idx) => {
             const t = item.task;
             const card = document.createElement('div');
-            card.className = 'task-card';
+            card.className = `task-card ${idx === vimFocusedIndex ? 'vim-focused' : ''}`;
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('data-task-id', t.id);
+            card.setAttribute('data-profile-id', item.profile.id);
 
-            // Distinct visual warning flags for fast deadlines
             if (item.weight === 1) {
                 card.style.borderLeftColor = 'var(--danger)';
             } else if (item.weight === 2) {
@@ -710,9 +729,74 @@
                     </div>
                 </div>
             `;
+            
+            // Allow clicking to manually update tracking border indices smoothly
+            card.addEventListener('click', () => {
+                vimFocusedIndex = idx;
+                renderHomeView();
+            });
+
             container.appendChild(card);
         });
+
+        // Retain visual container scroll adjustment when moving selection outside viewpoint scope
+        if (vimFocusedIndex !== -1) {
+            const cards = container.querySelectorAll('.task-card');
+            if (cards[vimFocusedIndex]) {
+                cards[vimFocusedIndex].focus();
+            }
+        }
     }
+
+    // Global Mouseless Event Listener Interface (Vim Keybindings Router)
+    window.addEventListener('keydown', function(e) {
+        const activeEl = document.activeElement;
+        const searchInput = document.getElementById('home-search-bar');
+
+        // Rule: If writing parameters inside form inputs, avoid hijacking structural characters
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+            if (e.key === 'Escape' || (e.key === 'Enter' && activeEl === searchInput)) {
+                activeEl.blur();
+                e.preventDefault();
+            }
+            return;
+        }
+
+        if (activeMode !== 'home') return;
+
+        // Route: Focus command trigger "/"
+        if (e.key === '/') {
+            if (searchInput) {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            }
+            return;
+        }
+
+        const cards = document.querySelectorAll('#home-task-container .task-card');
+        if (cards.length === 0) return;
+
+        // Route: Vertical scrolling tracking modifiers "j" and "k"
+        if (e.key === 'j') {
+            e.preventDefault();
+            vimFocusedIndex = (vimFocusedIndex + 1) % cards.length;
+            renderHomeView();
+        } else if (e.key === 'k') {
+            e.preventDefault();
+            vimFocusedIndex = vimFocusedIndex <= 0 ? cards.length - 1 : vimFocusedIndex - 1;
+            renderHomeView();
+        } 
+        // Route: Selection execution modifiers "Space" or "Enter"
+        else if (e.key === ' ' || e.key === 'Enter') {
+            if (vimFocusedIndex !== -1 && cards[vimFocusedIndex]) {
+                e.preventDefault();
+                const tId = cards[vimFocusedIndex].getAttribute('data-task-id');
+                const pId = cards[vimFocusedIndex].getAttribute('data-profile-id');
+                toggleTask(tId, pId);
+            }
+        }
+    });
 
     function renderSetupView() {
         if (!activeProfileId || !state.profiles[activeProfileId]) {
