@@ -144,7 +144,7 @@
         .workspace { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; }
         .view-header { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 30px; }
         .view-header h1 { font-family: 'Orbitron', sans-serif; font-size: 28px; margin: 0; }
-        .status-badge { inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; background: var(--accent-dim); color: var(--accent); margin-top: 10px; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; background: var(--accent-dim); color: var(--accent); margin-top: 10px; }
 
         .task-card { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; transition: 0.2s; user-select: none; border-left: 4px solid var(--danger); }
         .task-card.verified { border-left-color: var(--accent); }
@@ -218,7 +218,8 @@
 
 <div class="workspace">
     <div class="mode-container">
-        <button class="mode-btn active" id="mode-setup" onclick="setMode('setup')">1. Setup Engine</button>
+        <button class="mode-btn active" id="mode-home" onclick="setMode('home')">0. Homepage</button>
+        <button class="mode-btn" id="mode-setup" onclick="setMode('setup')">1. Setup Engine</button>
         <button class="mode-btn" id="mode-interrogate" onclick="setMode('interrogate')">2. Interrogation Check</button>
         <button class="mode-btn" id="mode-results" onclick="setMode('results')">3. Metric Results</button>
     </div>
@@ -228,12 +229,19 @@
         <div id="active-meta" class="status-badge">System Offline</div>
     </div>
 
-    <div id="setup-section">
+    <div id="home-section">
+        <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid var(--accent); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: var(--accent);">
+            <strong>QUICK VIEW PANEL:</strong> Here are the tasks across all system layouts that require tracking parameter completion within the immediate operational horizon.
+        </div>
+        <div id="home-task-container"></div>
+    </div>
+
+    <div id="setup-section" class="hidden">
         <div id="setup-task-container"></div>
         <div id="creator-tool" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
             <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
                 <div style="display:flex; gap: 10px;">
-                    <input type="text" id="new-task-name" placeholder="Task Node Label Title (e.g., Practice Anti-Aairs)" style="flex:1; margin-bottom:0;">
+                    <input type="text" id="new-task-name" placeholder="Task Node Label Title (e.g., Practice Anti-Airs)" style="flex:1; margin-bottom:0;">
                     <button class="btn" style="width: auto; padding: 0 24px;" onclick="addTask()">+ Append Node</button>
                 </div>
                 <div class="creator-form-grid">
@@ -249,8 +257,11 @@
     </div>
 
     <div id="interrogate-section" class="hidden">
-        <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid var(--accent); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: var(--accent);">
-            <strong>INTERROGATION PROTOCOL:</strong> Tasks initialize as Incomplete. Check a card box to log successful completion. If you access this panel and ignore your tasks, your signature reflects a "Ghost Login" pattern.
+        <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid var(--accent); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: var(--accent); display: flex; justify-content: space-between; align-items: center;">
+            <div style="max-width: 70%;">
+                <strong>INTERROGATION PROTOCOL:</strong> Tasks initialize as Incomplete. Check a card box to log successful completion.
+            </div>
+            <button class="btn" style="width: auto; padding: 8px 16px; font-size: 11px;" onclick="checkAllActiveTasks()">✓ Check All Tasks</button>
         </div>
         <div id="interrogate-task-container"></div>
     </div>
@@ -306,19 +317,20 @@
             state = parsed;
             if (!state.collapsedFolders) state.collapsedFolders = {};
             if (!state.archives) state.archives = [];
+            if (!state.permanentCompletedHistory) state.permanentCompletedHistory = [];
             if (state.generationVersion === undefined) state.generationVersion = 1;
         } else {
             throw new Error();
         }
     } catch(e) {
-        state = { folders: {}, profiles: {}, logs: {}, interactions: {}, collapsedFolders: {}, archives: [], generationVersion: 1 };
+        state = { folders: {}, profiles: {}, logs: {}, interactions: {}, collapsedFolders: {}, archives: [], permanentCompletedHistory: [], generationVersion: 1 };
         localStorage.setItem('acc_engine_state_v4', JSON.stringify(state));
     }
 
     let activeProfileId = null;
     let chart = null;
     let singleNodeChartInstances = {}; 
-    let activeMode = 'setup';
+    let activeMode = 'home';
 
     function save() {
         localStorage.setItem('acc_engine_state_v4', JSON.stringify(state));
@@ -339,6 +351,7 @@
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`mode-${mode}`).classList.add('active');
 
+        document.getElementById('home-section').classList.add('hidden');
         document.getElementById('setup-section').classList.add('hidden');
         document.getElementById('interrogate-section').classList.add('hidden');
         document.getElementById('results-section').classList.add('hidden');
@@ -346,7 +359,10 @@
 
         logInteraction();
         updateGenerationLabel();
-        if (activeProfileId) {
+        
+        if (mode === 'home') {
+            renderHomeView();
+        } else if (activeProfileId) {
             renderSetupView();
             renderInterrogateView();
             updateChart();
@@ -473,7 +489,6 @@
         if (!dateVal) return '';
         
         let displayStr = '';
-        // Convert YYYY-MM-DD to standard format
         const parts = dateVal.split('-');
         if(parts.length === 3) {
             displayStr += `${parts[1]}/${parts[2]}/${parts[0]}`;
@@ -487,7 +502,7 @@
             const minutes = timeParts[1];
             const ampm = hours >= 12 ? 'PM' : 'AM';
             hours = hours % 12;
-            hours = hours ? hours : 12; // 0 matches 12
+            hours = hours ? hours : 12; 
             displayStr += ` @ ${hours}:${minutes} ${ampm}`;
         }
         return displayStr;
@@ -523,15 +538,31 @@
         renderSetupView();
     }
 
-    function toggleTask(taskId) {
+    function toggleTask(taskId, profileId = activeProfileId) {
+        const targetDateKey = getDateString();
+        if (!state.logs[targetDateKey]) state.logs[targetDateKey] = {};
+        if (!state.logs[targetDateKey][profileId]) state.logs[targetDateKey][profileId] = {};
+        
+        const current = state.logs[targetDateKey][profileId][taskId] === true; 
+        state.logs[targetDateKey][profileId][taskId] = !current;
+        state.interactions[targetDateKey] = 'marked';
+        
+        save();
+        if (activeMode === 'home') renderHomeView();
+        else renderInterrogateView();
+    }
+
+    function checkAllActiveTasks() {
+        if (!activeProfileId || !state.profiles[activeProfileId]) return;
+        const p = state.profiles[activeProfileId];
         const targetDateKey = getDateString();
         if (!state.logs[targetDateKey]) state.logs[targetDateKey] = {};
         if (!state.logs[targetDateKey][activeProfileId]) state.logs[targetDateKey][activeProfileId] = {};
-        
-        const current = state.logs[targetDateKey][activeProfileId][taskId] === true; 
-        state.logs[targetDateKey][activeProfileId][taskId] = !current;
+
+        p.tasks.forEach(t => {
+            state.logs[targetDateKey][activeProfileId][t.id] = true;
+        });
         state.interactions[targetDateKey] = 'marked';
-        
         save();
         renderInterrogateView();
     }
@@ -541,7 +572,7 @@
         document.getElementById('creator-tool').style.display = 'block';
         logInteraction();
         renderSidebar();
-        setMode(activeMode);
+        setMode(activeMode === 'home' ? 'setup' : activeMode);
     }
 
     function renderSidebar() {
@@ -597,6 +628,64 @@
         });
     }
 
+    function renderHomeView() {
+        document.getElementById('active-title').innerText = `HQ // OPERATIONS OVERVIEW`;
+        document.getElementById('active-meta').innerText = `System Online // Aggregated Dash`;
+        const container = document.getElementById('home-task-container');
+        container.innerHTML = '';
+
+        const todayStr = getDateString();
+        let nearHorizonTasks = [];
+
+        // Gather upcoming or uncompleted near horizon items across profiles
+        Object.keys(state.profiles).forEach(pId => {
+            const p = state.profiles[pId];
+            p.tasks.forEach(t => {
+                let isCompletedToday = state.logs[todayStr]?.[pId]?.[t.id] === true;
+                
+                if (t.date) {
+                    const diffTime = new Date(t.date) - new Date(todayStr);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    // Horizon window setup: 3 days out or overdue
+                    if (diffDays <= 3 && !isCompletedToday) {
+                        nearHorizonTasks.push({ task: t, profile: p, daysLeft: diffDays });
+                    }
+                } else if (!isCompletedToday) {
+                    nearHorizonTasks.push({ task: t, profile: p, daysLeft: 0 });
+                }
+            });
+        });
+
+        if (nearHorizonTasks.length === 0) {
+            container.innerHTML = `<div style="color:var(--text-dim); font-size:14px; font-style:italic;">No structural target nodes demand focus within the 72-hour operating array. Good alignment.</div>`;
+            return;
+        }
+
+        nearHorizonTasks.sort((a, b) => (a.task.date || '') > (b.task.date || '') ? 1 : -1);
+
+        nearHorizonTasks.forEach(item => {
+            const t = item.task;
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            card.style.borderLeftColor = item.daysLeft < 0 ? 'var(--danger)' : 'var(--warn)';
+
+            const badgeDateTime = formatBadgeDateTime(t.date, t.time);
+            card.innerHTML = `
+                <div class="task-header-row">
+                    <div class="check-box" onclick="toggleTask('${t.id}', '${item.profile.id}')"></div>
+                    <div class="task-info">
+                        <div>
+                            <div class="task-name">${t.name}</div>
+                            <div style="font-size: 11px; color: var(--accent); margin-top:2px;">Target Context Map: [${item.profile.name}]</div>
+                        </div>
+                        <div class="task-meta">${badgeDateTime ? `Target: ${badgeDateTime}` : 'Daily Routine Cycle'}</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
     function renderSetupView() {
         if (!activeProfileId || !state.profiles[activeProfileId]) {
             document.getElementById('setup-task-container').innerHTML = '';
@@ -644,11 +733,47 @@
         });
     }
 
+    function processPermanentTaskAutoCleanup() {
+        const todayStr = getDateString();
+        
+        Object.keys(state.profiles).forEach(pId => {
+            const p = state.profiles[pId];
+            if (p.type === 'never') {
+                let remainingTasks = [];
+                p.tasks.forEach(t => {
+                    let clearedYesterdayOrPrior = false;
+                    
+                    // Look through logs starting from yesterday back to determine if completed task deserves pruning
+                    Object.keys(state.logs).forEach(dateKey => {
+                        if (dateKey !== todayStr && state.logs[dateKey]?.[pId]?.[t.id] === true) {
+                            clearedYesterdayOrPrior = true;
+                        }
+                    });
+
+                    if (clearedYesterdayOrPrior) {
+                        state.permanentCompletedHistory.push({
+                            task: t,
+                            archivedAt: new Date().toISOString(),
+                            profileId: pId
+                        });
+                    } else {
+                        remainingTasks.push(t);
+                    }
+                });
+                p.tasks = remainingTasks;
+            }
+        });
+        save();
+    }
+
     function renderInterrogateView() {
         if (!activeProfileId || !state.profiles[activeProfileId]) {
             document.getElementById('interrogate-task-container').innerHTML = '';
             return;
         }
+        
+        processPermanentTaskAutoCleanup();
+        
         const p = state.profiles[activeProfileId];
         const container = document.getElementById('interrogate-task-container');
         document.getElementById('active-title').innerText = `INTERROGATION // ${p.name}`;
@@ -871,7 +996,6 @@
         const confirmation = confirm(
             `⚠️ CONFIRM GENERATIONAL HARD RESET ⚠️\n\n` +
             `This execution wipes ALL current directories, active folders, and user profiles back to complete ZERO.\n\n` +
-            `This current setup will be permanently archived as [Generation Version V${state.generationVersion}]. The compiled payload will contain this version AND all previous versions for chronological context analyzing.\n\n` +
             `Wipe the interface state foundation clean?`
         );
         
@@ -883,7 +1007,8 @@
             folders: JSON.parse(JSON.stringify(state.folders)),
             profiles: JSON.parse(JSON.stringify(state.profiles)),
             logs: JSON.parse(JSON.stringify(state.logs)),
-            interactions: JSON.parse(JSON.stringify(state.interactions))
+            interactions: JSON.parse(JSON.stringify(state.interactions)),
+            permanentCompletedHistory: JSON.parse(JSON.stringify(state.permanentCompletedHistory))
         };
 
         state.archives.push(structuralRunSnapshot);
@@ -914,6 +1039,7 @@
         state.logs = {};
         state.interactions = {};
         state.collapsedFolders = {};
+        state.permanentCompletedHistory = [];
         
         state.generationVersion += 1;
         save();
@@ -929,8 +1055,8 @@
         document.getElementById('active-title').innerText = 'Awaiting Initialization';
         document.getElementById('active-meta').innerText = 'System Wiped Clean // Gen Initialized';
         
-        alert(`Unified cross-generational timeline compiled into clipboard memory!\n\nEngine state completely returned to absolute zero. Generation V${state.generationVersion} terminal now online.`);
-        setMode('setup');
+        alert(`Unified cross-generational timeline compiled into clipboard memory!\n\nEngine state completely returned to absolute zero.`);
+        setMode('home');
     }
 
     function triggerNativeJsonDownload() {
@@ -942,6 +1068,7 @@
             interactions: state.interactions,
             collapsedFolders: state.collapsedFolders,
             archives: state.archives,
+            permanentCompletedHistory: state.permanentCompletedHistory,
             generationVersion: state.generationVersion
         };
         
@@ -972,13 +1099,13 @@
                 if (incomingData.interactions) state.interactions = incomingData.interactions;
                 if (incomingData.collapsedFolders) state.collapsedFolders = incomingData.collapsedFolders;
                 if (incomingData.archives) state.archives = incomingData.archives;
+                if (incomingData.permanentCompletedHistory) state.permanentCompletedHistory = incomingData.permanentCompletedHistory;
                 if (incomingData.generationVersion !== undefined) state.generationVersion = incomingData.generationVersion;
 
                 save();
                 renderSidebar();
                 updateGenerationLabel();
-                const keys = Object.keys(state.profiles);
-                if (keys.length > 0) selectProfile(keys[0]);
+                setMode('home');
                 alert("Master cross-generational system timeline and active layouts completely restored.");
 
             } catch (err) {
@@ -991,8 +1118,7 @@
 
     renderSidebar();
     updateGenerationLabel();
-    const keys = Object.keys(state.profiles);
-    if (keys.length > 0) selectProfile(keys[0]);
+    setMode('home');
 </script>
 </body>
 </html>
