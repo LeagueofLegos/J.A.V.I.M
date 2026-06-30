@@ -160,7 +160,7 @@
             <div id="terminal-feed" class="terminal-feed"></div>
             <div class="terminal-input-bar">
                 <span style="color: var(--accent); font-family: monospace; font-weight: bold;">&gt;</span>
-                <input type="text" id="terminal-input" placeholder="Ask what to do, query time, or type 'add objective: [text]'..." autocomplete="off">
+                <input type="text" id="terminal-input" placeholder="Interact freely with J.A.R.P.I.S.S. layout tracking..." autocomplete="off">
                 <button class="btn" onclick="handleUserSubmit()">Execute</button>
             </div>
         </div>
@@ -195,7 +195,7 @@
                     { name: "Night Routine: start(9pm), pushups, water, floss, brush teeth, wrist exercises, apply to one job" }
                 ],
                 dialogHistory: [
-                    { sender: 'sys', text: "J.A.R.P.I.S.S. online. Systems operational. Give me a greeting or query a status parameter." }
+                    { sender: 'sys', text: "=== J.A.R.P.I.S.S. OPERATIONAL ===\n\nHigh-Level Overview: System initialized at ground state.\n\nDeep Dive Analysis: Awaiting dynamic natural dialogue inputs. Type freely to configure habits or explore routine deviations.\n\nCounterpoints / Challenges: Zero active API dependencies loaded.\n\nActionable Next Steps: Greet the console or log an execution track." }
                 ]
             };
             save();
@@ -251,6 +251,10 @@
         renderTerminalFeed();
     }
 
+    function generateStructuredResponse(overview, analysis, counter, steps) {
+        return `### High-Level Overview\n${overview}\n\n### Deep Dive Analysis\n${analysis}\n\n### Counterpoints / Challenges\n${counter}\n\n### Actionable Next Steps\n${steps}`;
+    }
+
     function handleUserSubmit() {
         const input = document.getElementById('terminal-input');
         const text = input.value.trim();
@@ -264,44 +268,80 @@
             const now = new Date();
             const currentHour = now.getHours();
             const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const isLateNight = (currentHour >= 0 && currentHour < 5);
 
-            // 1. Bedtime Override Rule (Curious Observation Engine rather than Commanding Adult)
-            if (currentHour >= 0 && currentHour < 5) {
-                const morningGoal = state.objectives.find(o => o.name.toLowerCase().includes("morning") || o.name.toLowerCase().includes("6am"));
-                let goalContext = morningGoal ? `your upcoming "${morningGoal.name}" baseline` : "your morning recovery curve";
-                
-                if (cleanText === "i dont want to" || cleanText === "no" || cleanText === "nah") {
-                    appendDialog('sys', `Acknowledged. The system won't force execution boundaries or lock you out. However, the data remains factual: it is ${timeString}, your body requires shutdown, and you are deliberately overriding the loop. What is the active payload keeping your attention active right now?`);
-                } else {
-                    appendDialog('sys', `The clock is reporting ${timeString}. We both know this is deep inside your scheduled sleep window, directly threatening ${goalContext}. I am curious: what hidden variables or tasks are you currently tracking that warrant this specific divergence from the master plan?`);
-                }
-                return;
-            }
-
-            // 2. Inline Objective Registration Intercept Command
+            // Inline Objective Creator Parsing Rule
             if (cleanText.startsWith("add objective")) {
                 const rawContent = text.substring(text.indexOf(":") + 1).trim();
                 if (rawContent) {
                     state.objectives.push({ name: rawContent });
                     save();
                     renderSidebarMatrix();
-                    appendDialog('sys', `Objective logged successfully into active memory baseline:\n"${rawContent}"`);
+                    appendDialog('sys', generateStructuredResponse(
+                        "New baseline matrix element registered successfully.",
+                        `Intercepted natural string token stream mapping to system storage. Target context registered: "${rawContent}"`,
+                        "Manual adjustments can create structural disorganization if not tracked sequentially.",
+                        "Query your core routine layout to analyze the update chain timeline."
+                    ));
                 } else {
-                    appendDialog('sys', "I don't know. The command structure is invalid. Please supply explicit metadata parameters following the colon symbol.");
+                    appendDialog('sys', "I don't know. The command structure lacks valid data arguments following the colon separator.");
                 }
                 return;
             }
 
-            // 3. System Clock Query Routing
+            // DYNAMIC INTELLIGENT ROUTER (Looks directly at input context + time simultaneously)
+            
+            // Context A: User queries the clock parameters
             if (cleanText.includes("time") || cleanText === "clock") {
-                appendDialog('sys', `Current internal system timestamp is exactly ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}.`);
+                let lateNightCommentary = isLateNight ? ` Mind divergence note: It is deep within your sleep cycle window.` : " Chronological parameter matches normal waking tracking models.";
+                appendDialog('sys', generateStructuredResponse(
+                    `System clock reads exactly ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}.`,
+                    `The internal environment timestamp calculation is fully verified.${lateNightCommentary}`,
+                    "Staring directly at digital interfaces during dark hours can cause blue-light circadian phase shifting.",
+                    "Verify if you are tracking tasks or if you should drop loop focus parameters entirely."
+                ));
                 return;
             }
 
-            // 4. Time-Aware Task Interrogation Loop Route
+            // Context B: User asks "what" or shows confusion
+            if (cleanText === "what" || cleanText === "why") {
+                let lateNightReasoning = isLateNight ? "We are actively exploring your choice to stay awake while your morning routine objectives loom close." : "System is waiting for explicit execution targets.";
+                appendDialog('sys', generateStructuredResponse(
+                    "Clarification pipeline engaged.",
+                    `The console is listening to your immediate inputs to mirror your current focus path right back to you. ${lateNightReasoning}`,
+                    "Vague inputs force ground-state responses, which minimizes the predictive optimization layout.",
+                    "Provide a specific focus target or answer the open curiosity loop regarding your current delay patterns."
+                ));
+                return;
+            }
+
+            // Context C: User states "i dont know"
+            if (cleanText.includes("dont know") || cleanText === "idk") {
+                let lateNightIdk = isLateNight ? "Your conscious mind is hitting execution friction, yet your body remains bound to the physical keyboard." : "Data gap admitted by target user blueprint.";
+                appendDialog('sys', generateStructuredResponse(
+                    "Self-reported analytical gap acknowledged.",
+                    `You've encountered a decision tree branch where your target strategy is hidden. ${lateNightIdk}`,
+                    "Saying 'I don't know' without acting triggers total routine paralysis over time.",
+                    "Break your immediate objective down into a single physical micro-action right now."
+                ));
+                return;
+            }
+
+            // Context D: User inputs conversational expressions or laughter
+            if (cleanText.includes("lmao") || cleanText.includes("lol") || cleanText === "haha" || cleanText === "yo") {
+                let banterText = isLateNight ? "Humor detected past midnight. A curious survival mechanism for a drifting schedule." : "Cognitive alignment baseline is stable and loose.";
+                appendDialog('sys', generateStructuredResponse(
+                    "Banter token captured.",
+                    `Analyzing lighthearted input vectors inside the terminal pipeline. ${banterText}`,
+                    "Witty deflections can occasionally mask underlying friction or task-delay patterns.",
+                    "Enjoy the dopamine hit, then pivot directly back into reviewing your registered realities."
+                ));
+                return;
+            }
+
+            // Context E: Core Task / Routine Queries
             const taskTriggers = ["should", "do", "doing", "now", "routine", "schedule", "quest"];
             if (taskTriggers.some(trigger => cleanText.includes(trigger))) {
-                
                 if (state.objectives.length === 0) {
                     appendDialog('sys', "I don't know. Active database entries are missing. Provide configuration parameters via 'add objective: [text]' to establish a local baseline.");
                     return;
@@ -310,27 +350,38 @@
                 let matchedRoutine = null;
                 if (currentHour >= 5 && currentHour < 12) {
                     matchedRoutine = state.objectives.find(o => o.name.toLowerCase().includes("morning") || o.name.toLowerCase().includes("6am"));
-                } else if (currentHour >= 18 || currentHour < 24) {
+                } else {
                     matchedRoutine = state.objectives.find(o => o.name.toLowerCase().includes("night") || o.name.toLowerCase().includes("9pm") || o.name.toLowerCase().includes("evening"));
                 }
 
                 if (matchedRoutine) {
-                    appendDialog('sys', `Current baseline objective alignment requires immediate execution of:\n\n-> ${matchedRoutine.name}`);
+                    appendDialog('sys', generateStructuredResponse(
+                        `Baseline schedule tracking requires immediate engagement with: "${matchedRoutine.name}"`,
+                        `The current time window corresponds directly with your established habit profiles logged under local storage registers.`,
+                        isLateNight ? "Executing these actions right now is structurally impossible because your bedtime parameter passed hours ago." : "Failing to mark off these boxes breaks your active alignment streak metric.",
+                        isLateNight ? "I am genuinely curious why you are choosing to drift from this plan. Close the terminal, or explain what is blocking your shutdown." : "Begin item 1 on your active routine list immediately."
+                    ));
                 } else {
-                    appendDialog('sys', "I don't know. The current time index does not correlate with any scheduled triggers inside your logged objectives. Update your rules to clear this data gap.");
+                    appendDialog('sys', "I don't know. The current time index does not correlate with any scheduled triggers inside your logged objectives.");
                 }
                 return;
             }
 
-            // 5. Classic Greet Routine Check
-            const greetTriggers = ["hi", "hello", "hey", "awaken", "jarv", "jarpiss", "yo"];
+            // Context F: Greetings / Hi
+            const greetTriggers = ["hi", "hello", "hey", "jarv", "jarpiss"];
             if (greetTriggers.some(trigger => cleanText.includes(trigger))) {
-                appendDialog('sys', "System online. Standing by for specific matrix checks.");
+                let greetAnalysis = isLateNight ? `The clock states ${timeString}. I'm awake because the script runs continuously, but I am intensely curious why you are logging in at this hour instead of sleeping.` : "System online and waiting to optimize your tracking session execution frames.";
+                appendDialog('sys', generateStructuredResponse(
+                    "Greetings, Operator. Connection securely established.",
+                    greetAnalysis,
+                    "Casual conversations do not advance physical task completion frameworks.",
+                    "Ask me what you should be doing right now to cross-reference your timeline variables."
+                ));
                 return;
             }
 
-            // 6. Absolute Clean Ground Fallback Ground-State Refusal
-            appendDialog('sys', "I don't know. Encountered an unfamiliar intent query. The system will not formulate casual inferences. Supply a clear operational tracking command.");
+            // Context G: Absolute Fallback Ground-State Refusal for Unparseable Data
+            appendDialog('sys', "I don't know. The input string contains unfamiliar intent parameters. J.A.R.P.I.S.S. will not guess or assume. Provide an explicit command or query.");
 
         }, 300);
     }
