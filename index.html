@@ -250,18 +250,16 @@
 </div>
 
 <script>
-    // System Socratic Prompting Question Array
-    const socraticQuestions = [
-        "What precisely is the absolute worst consequence if you decide not to touch this assignment right now?",
-        "Are you waiting to achieve a feeling of 'readiness' before acting? Where does that specific sensation manifest?",
-        "If an automated script forced you to do exactly 120 seconds of this work right now, what would break?",
-        "Look at your target goal. Is your current hesitation rooted in an unrecognized fear of failure, or a hidden fear of scale?",
-        "Describe the friction point keeping you in place. Is it mechanical lack of data, or an emotional energy blockade?",
-        "What happens to your long-term consistency run if today's window closes completely flat?"
-    ];
-
     let state;
     const STORAGE_KEY = 'daily_quest_log_state_v5';
+
+    // Static Hard-coded Objective Realities
+    const baselineNightRoutine = [
+        "Dinner & Wrist Exercises / Ergonomics (Maintenance)",
+        "Pushups & Hydration (Water)",
+        "Dental Care (Brush / Floss)",
+        "GitHub Contribution Code Check-In"
+    ];
 
     function initSystemState() {
         let raw = localStorage.getItem(STORAGE_KEY);
@@ -272,9 +270,8 @@
             state = {
                 quests: [],
                 dialogHistory: [
-                    { sender: 'sys', text: "SYSTEM INITIALIZED. Hello. Type 'hi' or greet the platform to awaken the disruption loop sequence." }
-                ],
-                questionIndex: 0
+                    { sender: 'sys', text: "SYSTEM ACTIVE. Greet the console to access your core profile telemetry rules." }
+                ]
             };
             save();
         }
@@ -353,39 +350,54 @@
         appendDialog('user', text);
         input.value = '';
 
-        // Core Dialogue Logic Controller
         setTimeout(() => {
-            const testClean = text.toLowerCase();
-            if (testClean === 'hi' || testClean === 'hello' || testClean === 'hey') {
-                if (state.quests.length === 0) {
-                    appendDialog('sys', "Greetings. The system registers no active objectives in your sidebar layout matrix. Mount a target goal so we can interrogate your strategy architecture.");
-                } else {
-                    state.questionIndex = 0;
-                    appendDialog('sys', `Acknowledged. Let's inspect your focus framework.\n\nTarget Metric: "${state.quests[0].name}"\n\nInterrogation Route Step 1:\n${socraticQuestions[0]}`);
-                }
-            } else {
-                // Advance Socratic Interrogation Loop
-                if (state.quests.length === 0) {
-                    appendDialog('sys', "System requires a contextual tracking anchor. Please log an target objective inside the workspace matrix configuration sidebar.");
-                } else {
-                    state.questionIndex = (state.questionIndex + 1) % socraticQuestions.length;
-                    const nextQuestion = socraticQuestions[state.questionIndex];
-                    appendDialog('sys', `Data parsed. Redirecting mind focus vector logic patterns...\n\nNext Interrogation Directive:\n${nextQuestion}`);
-                }
+            const queryClean = text.toLowerCase().replace(/[^a-zA-Z0-9\s]/g, "");
+            const currentHour = new Date().getHours(); 
+
+            // 1. Bedtime Structural Override Check (Past Bedtime Anomaly: Midnight to 5 AM)
+            if (currentHour >= 0 && currentHour < 5) {
+                appendDialog('sys', "Routine anomaly detected. Current timestamp falls completely outside safe operational windows. You are executing an irrational late-night loop. Drop keyboard focus. Disconnect terminal and go back to sleep now.");
+                return;
             }
-        }, 400);
+
+            // 2. Night Routine Query Logic Path
+            if (queryClean.includes("night routine") || queryClean.includes("nightly routine")) {
+                // If data blocks have been wiped or initialized empty, perform direct ground refusal
+                if (state.quests.length === 0) {
+                    appendDialog('sys', "I don't know. Missing data profile attributes: Active tracking registry array is unassigned. Populate your tracking baseline parameters inside the matrix configuration sidebar to clear this exception.");
+                } else {
+                    // Match found: Output clean objective baseline data immediately with no afterthought
+                    let responsePayload = "Confirmed night routine baseline parameter list:\n";
+                    baselineNightRoutine.forEach((item, index) => {
+                        responsePayload += `${index + 1}. ${item}\n`;
+                    });
+                    responsePayload += `\nTarget tracking check-in lock: 10:00 PM.`;
+                    appendDialog('sys', responsePayload);
+                }
+                return;
+            }
+
+            // 3. Greeting Route Path
+            if (queryClean === 'hi' || queryClean === 'hello' || queryClean === 'hey') {
+                appendDialog('sys', "Console active. Connection verified. Query the engine for your exact metrics.");
+                return;
+            }
+
+            // 4. Default Unknown Unfamiliar Data Route
+            appendDialog('sys', "I don't know. Encountered an unfamiliar tracking context query string. The system will not formulate inferences or guess parameters. Supply explicit metadata updates.");
+
+        }, 300);
     }
 
     function triggerGlobalReset() {
-        const confirmation = confirm("⚠️ ERASE ACTIVE RUN TIMELINE EPOCH ⚠️\n\nThis permanently purges active profiles, tracking registries, and conversational histories. Your raw parameters will clear out fully.");
+        const confirmation = confirm("⚠️ PURGE ACTIVE MATRIX DATA ⚠️\n\nThis wipes all stored tracking files and conversation strings clean.");
         if (!confirmation) return;
 
         state = {
             quests: [],
             dialogHistory: [
-                { sender: 'sys', text: "SYSTEM REBOOT COMPLETE. Memory modules initialized to ground state. Welcome to your fresh timeline. Say 'hi' to prompt the disruptor engine." }
-            ],
-            questionIndex: 0
+                { sender: 'sys', text: "SYSTEM WIPED. Timeline reset to factory ground states. Greet the console to authenticate." }
+            ]
         };
         save();
         renderQuests();
@@ -411,14 +423,12 @@
         } catch (err) {}
     }
 
-    // Modern Terminal Command Shortcut Mapping Setup
     window.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && document.activeElement === document.getElementById('terminal-input')) {
             handleUserSubmit();
         }
     });
 
-    // Boot Initialization Call Routine
     initSystemState();
     renderQuests();
     renderTerminalFeed();
