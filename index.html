@@ -105,6 +105,23 @@
         .msg.sys .msg-text { border-color: rgba(0, 255, 136, 0.15); }
         .msg.user .msg-text { border-color: rgba(59, 130, 246, 0.15); }
 
+        /* Dynamic styles for clickable and keyboard focus targets */
+        .msg-text a {
+            color: var(--accent);
+            text-decoration: underline;
+            font-weight: 500;
+        }
+        .msg-text a:focus {
+            outline: 2px dashed var(--accent);
+            outline-offset: 2px;
+        }
+        .msg-text h3 {
+            margin: 5px 0 10px 0;
+            color: var(--accent);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+        }
+
         .terminal-input-bar {
             display: flex;
             border-top: 1px solid var(--border);
@@ -173,7 +190,7 @@
 
 <script>
 let state;
-const STORAGE_KEY = 'javim_core_state_v2';
+const STORAGE_KEY = 'javim_core_state_v3';
 const OLLAMA_URL = 'http://localhost:11434/api/chat';
 
 function initSystemState() {
@@ -199,15 +216,44 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 
+// Helper function to turn raw string variables into interactive markdown/anchors safely
+function formatMessageText(inputText) {
+    let securedText = inputText
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+    // Process section headers
+    securedText = securedText.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+
+    // Parse block code strings
+    securedText = securedText.replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 3px; font-family: monospace;">$1</code>');
+
+    // Parse absolute links into interactively focusable anchors (Vimium compatible)
+    const urlPattern = /(https?:\/\/[^\s\(\)\<\>]+)/g;
+    securedText = securedText.replace(urlPattern, function(url) {
+        let cleanUrl = url;
+        if (cleanUrl.endsWith('.') || cleanUrl.endsWith(',')) {
+            cleanUrl = cleanUrl.slice(0, -1);
+        }
+        return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" tabindex="0">${cleanUrl}</a>`;
+    });
+
+    return securedText;
+}
+
 function renderTerminalFeed() {
     const feed = document.getElementById('terminal-feed');
     feed.innerHTML = '';
     state.dialogHistory.forEach(msg => {
         const card = document.createElement('div');
         card.className = `msg ${msg.sender}`;
+        
+        const formattedText = formatMessageText(msg.text);
+        
         card.innerHTML = `
             <span class="msg-sender">${msg.sender === 'sys' ? 'J.A.V.I.M.' : 'USER'}</span>
-            <div class="msg-text">${msg.text}</div>
+            <div class="msg-text">${formattedText}</div>
         `;
         feed.appendChild(card);
     });
@@ -233,14 +279,14 @@ function getSetupInstructions() {
     let steps = "";
     
     if (os === 'windows') {
-        steps = `[DETECTED ENVIRONMENT: WINDOWS]\n\n` +
+        steps = `### Detected Environment: Windows\n\n` +
                 `1. Download the installer from the official site: https://ollama.com/download\n` +
                 `2. Run the executable to install Ollama.\n` +
                 `3. Once installed, open your command prompt (cmd) or PowerShell and pull your desired model:\n` +
                 `   \`ollama run llama3\`\n` +
                 `4. Verify it is running locally on port 11434 by opening http://localhost:11434 in your browser.`;
     } else if (os === 'linux') {
-        steps = `[DETECTED ENVIRONMENT: LINUX]\n\n` +
+        steps = `### Detected Environment: Linux\n\n` +
                 `1. Open your terminal and install via the official script:\n` +
                 `   \`curl -fsSL https://ollama.com/install.sh | sh\`\n` +
                 `2. Start and enable the service:\n` +
@@ -250,7 +296,7 @@ function getSetupInstructions() {
                 `   \`ollama run llama3\`\n` +
                 `4. Ensure port binds correctly via: \`curl http://localhost:11434\``;
     } else {
-        steps = `[DETECTED ENVIRONMENT: UNDETERMINED]\n\n` +
+        steps = `### Detected Environment: Undetermined\n\n` +
                 `Please check your operating system configuration.\n` +
                 `- For Linux: Run \`curl -fsSL https://ollama.com/install.sh | sh\`\n` +
                 `- For Windows: Download the desktop installation binaries directly from https://ollama.com/download`;
