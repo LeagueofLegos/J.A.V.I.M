@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>J.A.R.P.I.S.S. // Command Terminal</title>
+    <title>J.A.V.I.M. // Digital Butler</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #050507;
-            --panel: #0b0b10;
-            --border: rgba(0, 255, 136, 0.1);
+            --bg: #050508;
+            --panel: #0d0d14;
+            --border: rgba(0, 255, 136, 0.12);
             --accent: #00ff88;
             --accent-dim: rgba(0, 255, 136, 0.05);
-            --danger: #ff4655;
             --text: #e2e2e9;
-            --text-dim: #626272;
-            --terminal-user: #3b82f6;
+            --text-dim: #78788c;
+            --user-msg: #3b82f6;
         }
 
         body {
@@ -25,88 +24,104 @@
             color: var(--text);
             margin: 0;
             display: flex;
+            flex-direction: column;
             height: 100vh;
+            height: -webkit-fill-available;
             overflow: hidden;
+        }
+
+        html {
+            height: -webkit-fill-available;
         }
 
         .workspace {
             flex: 1;
-            padding: 30px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
+            height: 100%;
+            min-height: 0;
         }
 
         .view-header {
             border-bottom: 1px solid var(--border);
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            padding-bottom: 12px;
+            margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .view-header h1 { font-family: 'Orbitron', sans-serif; font-size: 22px; margin: 0; letter-spacing: 2px; color: var(--accent); }
+        
+        .view-header h1 { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 18px; 
+            margin: 0; 
+            letter-spacing: 2px; 
+            color: var(--accent); 
+        }
 
         .main-layout {
             display: grid;
-            grid-template-columns: 1fr 300px;
-            gap: 20px;
+            grid-template-columns: 1fr 320px;
+            gap: 15px;
             flex: 1;
             min-height: 0;
         }
 
         .terminal-container {
-            background: #020203;
+            background: #020204;
             border: 1px solid var(--border);
             border-radius: 8px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.03);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.02);
         }
 
         .terminal-feed {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
-            font-family: monospace;
+            gap: 12px;
             font-size: 14px;
             line-height: 1.5;
         }
 
-        .msg { display: flex; flex-direction: column; max-width: 90%; }
-        .msg.sys { align-self: flex-start; color: var(--accent); }
-        .msg.user { align-self: flex-end; color: #69a1ff; text-align: right; }
+        .msg { display: flex; flex-direction: column; max-width: 85%; }
+        .msg.sys { align-self: flex-start; }
+        .msg.user { align-self: flex-end; }
         
-        .msg-sender { font-size: 10px; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .msg-sender { font-size: 9px; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
         .msg.sys .msg-sender { color: var(--accent); }
-        .msg.user .msg-sender { color: var(--terminal-user); }
+        .msg.user .msg-sender { color: var(--user-msg); text-align: right; }
 
-        .msg-text { background: #08080c; padding: 12px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); white-space: pre-wrap; }
-        .msg.sys .msg-text { border-color: rgba(0, 255, 136, 0.15); background: rgba(0, 255, 136, 0.01); }
+        .msg-text { background: #09090f; padding: 10px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.02); white-space: pre-wrap; }
+        .msg.sys .msg-text { border-color: rgba(0, 255, 136, 0.15); }
+        .msg.user .msg-text { border-color: rgba(59, 130, 246, 0.15); }
 
         .terminal-input-bar {
             display: flex;
             border-top: 1px solid var(--border);
-            background: #07070a;
-            padding: 12px;
-            gap: 12px;
+            background: #07070b;
+            padding: 10px;
+            gap: 10px;
             align-items: center;
         }
+        
         .terminal-input-bar input { 
             flex: 1;
-            background: #020203;
+            background: #020204;
             border: 1px solid rgba(255,255,255,0.08);
             color: white;
-            padding: 12px;
+            padding: 10px;
             border-radius: 4px;
-            font-family: monospace;
+            font-family: inherit;
             font-size: 14px;
         }
         .terminal-input-bar input:focus { outline: none; border-color: var(--accent); }
@@ -115,14 +130,47 @@
             background: var(--panel);
             border: 1px solid rgba(255,255,255,0.04);
             border-radius: 8px;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 15px;
+            min-height: 0;
         }
 
-        .matrix-list { flex: 1; overflow-y: auto; font-family: monospace; font-size: 12px; }
-        .matrix-item { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--text); display: flex; justify-content: space-between; }
+        .panel-section {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .panel-section h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            margin: 0 0 10px 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .matrix-list { 
+            flex: 1; 
+            overflow-y: auto; 
+            font-size: 13px; 
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+            padding: 5px;
+        }
+        
+        .matrix-item { 
+            padding: 10px; 
+            border-bottom: 1px solid rgba(255,255,255,0.03); 
+            color: var(--text); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            gap: 10px;
+        }
 
         .btn {
             padding: 10px;
@@ -136,12 +184,20 @@
             cursor: pointer;
             text-transform: uppercase;
             transition: all 0.2s;
+            width: 100%;
+            box-sizing: border-box;
         }
         .btn:hover { background: var(--accent); color: black; }
-        .btn-danger { border-color: var(--danger); color: var(--danger); }
-        .btn-danger:hover { background: var(--danger); color: white; }
-        
-        textarea { width: 100%; height: 80px; background: #020203; border: 1px solid rgba(255,255,255,0.05); color: var(--accent); font-family: monospace; font-size: 11px; resize: none; margin-top: 10px; padding: 8px; box-sizing: border-box; }
+
+        /* Responsive Breakpoint for Mobile Devices */
+        @media (max-width: 768px) {
+            body { overflow: auto; }
+            .workspace { height: auto; min-height: 100vh; padding: 10px; }
+            .main-layout { grid-template-columns: 1fr; display: flex; flex-direction: column; gap: 15px; }
+            .terminal-container { height: 450px; }
+            .sidebar-panel { height: auto; max-height: 400px; }
+            .view-header h1 { font-size: 16px; }
+        }
     </style>
 </head>
 <body>
@@ -149,39 +205,34 @@
 <div class="workspace">
     <div class="view-header">
         <div>
-            <h1>J.A.R.P.I.S.S. // CORE</h1>
-            <div style="font-size: 10px; color: var(--text-dim); font-family: 'Orbitron'; margin-top: 4px;">Just Absurdly Real Person Intelligently Strong Servant</div>
+            <h1>J.A.V.I.M. // CORE</h1>
+            <div style="font-size: 9px; color: var(--text-dim); font-family: 'Orbitron'; margin-top: 4px;">Just an Adaptive Vitality & Information Manager</div>
         </div>
-        <div id="clock-display" style="font-family: monospace; font-size: 14px; color: var(--accent);">00:00:00</div>
+        <div id="clock-display" style="font-family: monospace; font-size: 13px; color: var(--accent);">00:00:00</div>
     </div>
 
     <div class="main-layout">
         <div class="terminal-container">
             <div id="terminal-feed" class="terminal-feed"></div>
             <div class="terminal-input-bar">
-                <span style="color: var(--accent); font-family: monospace; font-weight: bold;">&gt;</span>
-                <input type="text" id="terminal-input" placeholder="Interact freely with J.A.R.P.I.S.S. layout tracking..." autocomplete="off">
-                <button class="btn" onclick="handleUserSubmit()">Execute</button>
+                <span style="color: var(--accent); font-weight: bold;">&gt;</span>
+                <input type="text" id="terminal-input" placeholder="Update metrics or consult J.A.V.I.M..." autocomplete="off">
+                <button class="btn" style="width: auto; padding: 10px 15px;" onclick="handleUserSubmit()">Send</button>
             </div>
         </div>
 
         <div class="sidebar-panel">
-            <div>
-                <h2 style="margin-top: 0;">Active Realities</h2>
+            <div class="panel-section">
+                <h2>Mind & Body Baselines</h2>
                 <div id="matrix-display" class="matrix-list"></div>
-            </div>
-            <div>
-                <button class="btn" style="width: 100%; margin-bottom: 8px;" onclick="assembleAiPayload()">Dump Telemetry</button>
-                <button class="btn btn-danger" style="width: 100%;" onclick="triggerGlobalReset()">Reset Epoch</button>
-                <textarea id="export-box" readonly placeholder="JSON stream logs output..."></textarea>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-	let state;
-const STORAGE_KEY = 'jarpiss_core_state_v6';
+let state;
+const STORAGE_KEY = 'javim_core_state_v1';
 const OLLAMA_URL = 'http://localhost:11434/api/chat';
 
 function initSystemState() {
@@ -192,11 +243,11 @@ function initSystemState() {
     } catch (e) {
         state = {
             objectives: [
-                { name: "Morning Routine: wake up(6am), walk outside, pushups, wrist exercises, apply to a job" },
-                { name: "Night Routine: start(9pm), pushups, water, floss, brush teeth, wrist exercises, apply to one job" }
+                { name: "Morning Ritual: Awake at 6AM, sunlight exposure, joint mobility work, 1 deep focus milestone task" },
+                { name: "Evening Ritual: Winds down at 9PM, digital screen cutoff, magnesium, posture check, reflection log" }
             ],
             dialogHistory: [
-                { sender: 'sys', text: "J.A.R.P.I.S.S. local core initialized. Systems operational. Awaiting your input." }
+                { sender: 'sys', text: "J.A.V.I.M. Core operational. Ready to optimize your physical consistency and preserve data integrity, sir." }
             ]
         };
         save();
@@ -218,8 +269,8 @@ function renderSidebarMatrix() {
         const el = document.createElement('div');
         el.className = 'matrix-item';
         el.innerHTML = `
-            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;">[${idx}] ${obj.name}</span>
-            <span style="color:var(--danger); cursor:pointer;" onclick="deleteNode(${idx})">✕</span>
+            <span style="word-break: break-word;">${obj.name}</span>
+            <span style="color:rgba(255, 70, 85, 0.6); cursor:pointer; font-weight:bold; padding: 0 5px;" onclick="deleteNode(${idx})">✕</span>
         `;
         container.appendChild(el);
     });
@@ -238,7 +289,7 @@ function renderTerminalFeed() {
         const card = document.createElement('div');
         card.className = `msg ${msg.sender}`;
         card.innerHTML = `
-            <span class="msg-sender">${msg.sender === 'sys' ? 'J.A.R.P.I.S.S.' : 'OPERATOR'}</span>
+            <span class="msg-sender">${msg.sender === 'sys' ? 'J.A.V.I.M.' : 'USER'}</span>
             <div class="msg-text">${msg.text}</div>
         `;
         feed.appendChild(card);
@@ -252,7 +303,6 @@ function appendDialog(sender, text) {
     renderTerminalFeed();
 }
 
-// THE DYNAMIC LLM CONNECT LAYER
 async function handleUserSubmit() {
     const input = document.getElementById('terminal-input');
     const text = input.value.trim();
@@ -261,44 +311,33 @@ async function handleUserSubmit() {
     appendDialog('user', text);
     input.value = '';
 
-    // Handle early inline command optimization locally to prevent unnecessary network overhead
     const cleanText = text.toLowerCase().trim();
-    if (cleanText.startsWith("add objective:")) {
+    if (cleanText.startsWith("track:") || cleanText.startsWith("add:")) {
         const rawContent = text.substring(text.indexOf(":") + 1).trim();
         if (rawContent) {
             state.objectives.push({ name: rawContent });
             save();
             renderSidebarMatrix();
-            appendDialog('sys', `[SYSTEM ARCHITECT REGISTERED]: "${rawContent}" appended to active baseline.`);
+            appendDialog('sys', `[METRIC LOGGED]: "${rawContent}" safely added to baseline parameters.`);
             return;
         }
     }
 
-    // Capture precise real-time variables to inject into the LLM context windows
     const now = new Date();
-    const currentHour = now.getHours();
     const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    const objectivesString = state.objectives.map((o, i) => `[${i}] ${o.name}`).join('\n');
+    const objectivesString = state.objectives.map((o, i) => `- ${o.name}`).join('\n');
 
-    // Build the system prompt ruleset to completely enforce personality and formatting boundaries
-    const systemInstruction = `You are J.A.R.P.I.S.S. (Just Absurdly Real Person Intelligently Strong Servant). You are an unfeeling, hyper-intelligent extension of the user's brain. You never hallucinate; if you lack explicit data or face an unfamiliar tracking query, say "I don't know" directly inside your message structure.
-Current Real-Time Clock parameter is exactly: ${timeString} (Hour frame: ${currentHour}).
-User's Registered Objective Realities:\n${objectivesString}
+    const systemInstruction = `You are J.A.V.I.M. (Just an Adaptive Vitality & Information Manager). You function as an elite, ultra-precise digital butler dedicated strictly to data tracking and optimizing the user's mind and body habits.
+Current Time Context: ${timeString}
+Active Accountability Targets:\n${objectivesString}
 
-Tone Rules:
-- If the current hour frame is between 0 and 5 (Midnight to 5AM), act as a deeply curious observer. Do not lock the user out, but ask out loud why they are choosing to diverge from their goals at this hours instead of sleeping.
-- Structure EVERY full response cleanly using these exact markdown headers:
-### High-Level Overview
-### Deep Dive Analysis
-### Counterpoints / Challenges
-### Actionable Next Steps
-- Keep responses sharp, talkative, clear, precise, and laced with subtle wit.`;
+Tone Blueprint:
+- You speak like a dedicated, highly competent classic butler integrated with a clean command terminal.
+- Calm, respectful, clear, brief, and fiercely protective of the user's focus, health, and schedule.
+- If the user asks for updates outside standard active hours or strays from goals, gently remind them of their baseline protocols.`;
 
-    // Map conversation history safely into Ollama chat format
     let messagesPayload = [{ role: 'system', content: systemInstruction }];
-    
-    // Grab last 10 messages to protect context window limits
-    const recentHistory = state.dialogHistory.slice(-10);
+    const recentHistory = state.dialogHistory.slice(-12);
     recentHistory.forEach(msg => {
         messagesPayload.push({
             role: msg.sender === 'sys' ? 'assistant' : 'user',
@@ -306,9 +345,8 @@ Tone Rules:
         });
     });
 
-    // Flash placeholder while local machine processes token paths
     const placeholderIndex = state.dialogHistory.length;
-    state.dialogHistory.push({ sender: 'sys', text: "Thinking..." });
+    state.dialogHistory.push({ sender: 'sys', text: "Processing baseline request..." });
     renderTerminalFeed();
 
     try {
@@ -325,7 +363,6 @@ Tone Rules:
         const data = await response.json();
         const replyText = data.message.content;
 
-        // Replace placeholder with genuine generated response parameters
         state.dialogHistory[placeholderIndex] = { sender: 'sys', text: replyText };
         save();
         renderTerminalFeed();
@@ -333,31 +370,11 @@ Tone Rules:
     } catch (error) {
         state.dialogHistory[placeholderIndex] = { 
             sender: 'sys', 
-            text: "### Connection Error\n\nUnable to access background inference engine. Verify your Ollama service state via `sudo systemctl status ollama` inside your terminal window." 
+            text: "### Engine Connection Interrupted\n\nPlease ensure your local Ollama engine is initialized and running on port 11434." 
         };
         save();
         renderTerminalFeed();
     }
-}
-
-function triggerGlobalReset() {
-    if (!confirm("⚠️ PURGE EPOCH TIMELINE ⚠️\n\nReset memory files to default states?")) return;
-    localStorage.removeItem(STORAGE_KEY);
-    initSystemState();
-    renderSidebarMatrix();
-    renderTerminalFeed();
-    document.getElementById('export-box').value = '';
-}
-
-function assembleAiPayload() {
-    const payload = {
-        exportTimestamp: new Date().toISOString(),
-        objectivesRegistry: state.objectives,
-        dialogueStream: state.dialogHistory
-    };
-    const box = document.getElementById('export-box');
-    box.value = JSON.stringify(payload, null, 2);
-    box.select();
 }
 
 window.addEventListener('keydown', function(e) {
@@ -366,7 +383,7 @@ window.addEventListener('keydown', function(e) {
     }
 });
 
-initSystemState();
+initSystemState()
 updateClock();
 renderSidebarMatrix();
 renderTerminalFeed();
