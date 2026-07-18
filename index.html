@@ -40,7 +40,7 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
             width: 100%;
             height: 100%;
@@ -65,9 +65,8 @@
         }
 
         .main-layout {
-            display: grid;
-            grid-template-columns: 1fr 320px;
-            gap: 15px;
+            display: flex;
+            flex-direction: column;
             flex: 1;
             min-height: 0;
         }
@@ -79,6 +78,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            flex: 1;
             box-shadow: 0 0 20px rgba(0, 255, 136, 0.02);
         }
 
@@ -126,54 +126,8 @@
         }
         .terminal-input-bar input:focus { outline: none; border-color: var(--accent); }
 
-        .sidebar-panel {
-            background: var(--panel);
-            border: 1px solid rgba(255,255,255,0.04);
-            border-radius: 8px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            min-height: 0;
-        }
-
-        .panel-section {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            min-height: 0;
-        }
-
-        .panel-section h2 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 13px;
-            color: var(--text);
-            margin: 0 0 10px 0;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .matrix-list { 
-            flex: 1; 
-            overflow-y: auto; 
-            font-size: 13px; 
-            background: rgba(0,0,0,0.2);
-            border-radius: 4px;
-            padding: 5px;
-        }
-        
-        .matrix-item { 
-            padding: 10px; 
-            border-bottom: 1px solid rgba(255,255,255,0.03); 
-            color: var(--text); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            gap: 10px;
-        }
-
         .btn {
-            padding: 10px;
+            padding: 10px 15px;
             background: none;
             border: 1px solid var(--border);
             color: var(--accent);
@@ -184,18 +138,12 @@
             cursor: pointer;
             text-transform: uppercase;
             transition: all 0.2s;
-            width: 100%;
             box-sizing: border-box;
         }
         .btn:hover { background: var(--accent); color: black; }
 
-        /* Responsive Breakpoint for Mobile Devices */
         @media (max-width: 768px) {
-            body { overflow: auto; }
-            .workspace { height: auto; min-height: 100vh; padding: 10px; }
-            .main-layout { grid-template-columns: 1fr; display: flex; flex-direction: column; gap: 15px; }
-            .terminal-container { height: 450px; }
-            .sidebar-panel { height: auto; max-height: 400px; }
+            .workspace { padding: 10px; }
             .view-header h1 { font-size: 16px; }
         }
     </style>
@@ -216,15 +164,8 @@
             <div id="terminal-feed" class="terminal-feed"></div>
             <div class="terminal-input-bar">
                 <span style="color: var(--accent); font-weight: bold;">&gt;</span>
-                <input type="text" id="terminal-input" placeholder="Update metrics or consult J.A.V.I.M..." autocomplete="off">
-                <button class="btn" style="width: auto; padding: 10px 15px;" onclick="handleUserSubmit()">Send</button>
-            </div>
-        </div>
-
-        <div class="sidebar-panel">
-            <div class="panel-section">
-                <h2>Mind & Body Baselines</h2>
-                <div id="matrix-display" class="matrix-list"></div>
+                <input type="text" id="terminal-input" placeholder="Consult J.A.V.I.M..." autocomplete="off">
+                <button class="btn" onclick="handleUserSubmit()">Send</button>
             </div>
         </div>
     </div>
@@ -232,22 +173,18 @@
 
 <script>
 let state;
-const STORAGE_KEY = 'javim_core_state_v1';
+const STORAGE_KEY = 'javim_core_state_v2';
 const OLLAMA_URL = 'http://localhost:11434/api/chat';
 
 function initSystemState() {
     let raw = localStorage.getItem(STORAGE_KEY);
     try {
         state = JSON.parse(raw);
-        if (!state || !state.objectives || !state.dialogHistory) throw new Error();
+        if (!state || !state.dialogHistory) throw new Error();
     } catch (e) {
         state = {
-            objectives: [
-                { name: "Morning Ritual: Awake at 6AM, sunlight exposure, joint mobility work, 1 deep focus milestone task" },
-                { name: "Evening Ritual: Winds down at 9PM, digital screen cutoff, magnesium, posture check, reflection log" }
-            ],
             dialogHistory: [
-                { sender: 'sys', text: "J.A.V.I.M. Core operational. Ready to optimize your physical consistency and preserve data integrity, sir." }
+                { sender: 'sys', text: "J.A.V.I.M. Core operational. Standing by to act as your information butler, preserve data consistency, and keep updates clear." }
             ]
         };
         save();
@@ -261,26 +198,6 @@ function updateClock() {
     document.getElementById('clock-display').innerText = now.toTimeString().split(' ')[0];
 }
 setInterval(updateClock, 1000);
-
-function renderSidebarMatrix() {
-    const container = document.getElementById('matrix-display');
-    container.innerHTML = '';
-    state.objectives.forEach((obj, idx) => {
-        const el = document.createElement('div');
-        el.className = 'matrix-item';
-        el.innerHTML = `
-            <span style="word-break: break-word;">${obj.name}</span>
-            <span style="color:rgba(255, 70, 85, 0.6); cursor:pointer; font-weight:bold; padding: 0 5px;" onclick="deleteNode(${idx})">✕</span>
-        `;
-        container.appendChild(el);
-    });
-}
-
-function deleteNode(idx) {
-    state.objectives.splice(idx, 1);
-    save();
-    renderSidebarMatrix();
-}
 
 function renderTerminalFeed() {
     const feed = document.getElementById('terminal-feed');
@@ -303,6 +220,44 @@ function appendDialog(sender, text) {
     renderTerminalFeed();
 }
 
+function detectOS() {
+    const platform = navigator.platform.toLowerCase();
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (platform.includes('win') || userAgent.includes('windows')) return 'windows';
+    if (platform.includes('linux') || userAgent.includes('linux')) return 'linux';
+    return 'unknown';
+}
+
+function getSetupInstructions() {
+    const os = detectOS();
+    let steps = "";
+    
+    if (os === 'windows') {
+        steps = `[DETECTED ENVIRONMENT: WINDOWS]\n\n` +
+                `1. Download the installer from the official site: https://ollama.com/download\n` +
+                `2. Run the executable to install Ollama.\n` +
+                `3. Once installed, open your command prompt (cmd) or PowerShell and pull your desired model:\n` +
+                `   \`ollama run llama3\`\n` +
+                `4. Verify it is running locally on port 11434 by opening http://localhost:11434 in your browser.`;
+    } else if (os === 'linux') {
+        steps = `[DETECTED ENVIRONMENT: LINUX]\n\n` +
+                `1. Open your terminal and install via the official script:\n` +
+                `   \`curl -fsSL https://ollama.com/install.sh | sh\`\n` +
+                `2. Start and enable the service:\n` +
+                `   \`sudo systemctl enable ollama\`\n` +
+                `   \`sudo systemctl start ollama\`\n` +
+                `3. Download and test your model framework:\n` +
+                `   \`ollama run llama3\`\n` +
+                `4. Ensure port binds correctly via: \`curl http://localhost:11434\``;
+    } else {
+        steps = `[DETECTED ENVIRONMENT: UNDETERMINED]\n\n` +
+                `Please check your operating system configuration.\n` +
+                `- For Linux: Run \`curl -fsSL https://ollama.com/install.sh | sh\`\n` +
+                `- For Windows: Download the desktop installation binaries directly from https://ollama.com/download`;
+    }
+    return steps;
+}
+
 async function handleUserSubmit() {
     const input = document.getElementById('terminal-input');
     const text = input.value.trim();
@@ -311,30 +266,15 @@ async function handleUserSubmit() {
     appendDialog('user', text);
     input.value = '';
 
-    const cleanText = text.toLowerCase().trim();
-    if (cleanText.startsWith("track:") || cleanText.startsWith("add:")) {
-        const rawContent = text.substring(text.indexOf(":") + 1).trim();
-        if (rawContent) {
-            state.objectives.push({ name: rawContent });
-            save();
-            renderSidebarMatrix();
-            appendDialog('sys', `[METRIC LOGGED]: "${rawContent}" safely added to baseline parameters.`);
-            return;
-        }
-    }
-
     const now = new Date();
     const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    const objectivesString = state.objectives.map((o, i) => `- ${o.name}`).join('\n');
 
-    const systemInstruction = `You are J.A.V.I.M. (Just an Adaptive Vitality & Information Manager). You function as an elite, ultra-precise digital butler dedicated strictly to data tracking and optimizing the user's mind and body habits.
+    const systemInstruction = `You are J.A.V.I.M. (Just an Adaptive Vitality & Information Manager). You function as an elite, ultra-precise digital butler dedicated strictly to data tracking and maintaining user cognitive consistency.
 Current Time Context: ${timeString}
-Active Accountability Targets:\n${objectivesString}
 
 Tone Blueprint:
 - You speak like a dedicated, highly competent classic butler integrated with a clean command terminal.
-- Calm, respectful, clear, brief, and fiercely protective of the user's focus, health, and schedule.
-- If the user asks for updates outside standard active hours or strays from goals, gently remind them of their baseline protocols.`;
+- Calm, respectful, clear, brief, and fiercely protective of the user's focus, health, and schedule.`;
 
     let messagesPayload = [{ role: 'system', content: systemInstruction }];
     const recentHistory = state.dialogHistory.slice(-12);
@@ -368,9 +308,10 @@ Tone Blueprint:
         renderTerminalFeed();
 
     } catch (error) {
+        const setupInstructions = getSetupInstructions();
         state.dialogHistory[placeholderIndex] = { 
             sender: 'sys', 
-            text: "### Engine Connection Interrupted\n\nPlease ensure your local Ollama engine is initialized and running on port 11434." 
+            text: `### Engine Connection Interrupted\n\nUnable to access the background local inference engine on port 11434.\n\n${setupInstructions}` 
         };
         save();
         renderTerminalFeed();
@@ -383,9 +324,8 @@ window.addEventListener('keydown', function(e) {
     }
 });
 
-initSystemState()
+initSystemState();
 updateClock();
-renderSidebarMatrix();
 renderTerminalFeed();
 </script>
 </body>
