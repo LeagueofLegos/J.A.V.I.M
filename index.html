@@ -353,7 +353,7 @@ function handleUserSubmit() {
     // Standard static dashboard terminal instructions fallback
     setTimeout(() => {
         const guidance = getTerminalSetupInstructions();
-        appendDialog('sys', `${guidance}\n\n*Note: Ingestion data is currently isolated to memory. Paste your target data directly alongside your model invocation call inside your prompt tool.*`);
+        appendDialog('sys', `${guidance}\n\n*Note: Locally-hosted*`);
     }, 400);
 }
 
