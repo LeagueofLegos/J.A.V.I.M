@@ -6,6 +6,9 @@
     <title>J.A.V.I.M. // Digital Butler</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Include PDF.js and Mammoth.js libraries for 100% local browser text extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
         :root {
             --bg: #050508;
@@ -30,9 +33,7 @@
             overflow: hidden;
         }
 
-        html {
-            height: -webkit-fill-available;
-        }
+        html { height: -webkit-fill-available; }
 
         .workspace {
             flex: 1;
@@ -69,7 +70,25 @@
             flex-direction: column;
             flex: 1;
             min-height: 0;
+            gap: 15px;
         }
+
+        /* File Dropper Panel Styles */
+        .drop-zone {
+            background: var(--panel);
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .drop-zone.drag-over {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+        }
+        .drop-zone p { margin: 0; font-size: 14px; color: var(--text); }
+        .drop-zone span { font-size: 11px; color: var(--text-dim); display: block; margin-top: 5px; }
 
         .terminal-container {
             background: #020204;
@@ -105,22 +124,10 @@
         .msg.sys .msg-text { border-color: rgba(0, 255, 136, 0.15); }
         .msg.user .msg-text { border-color: rgba(59, 130, 246, 0.15); }
 
-        /* Dynamic styles for clickable and keyboard focus targets */
-        .msg-text a {
-            color: var(--accent);
-            text-decoration: underline;
-            font-weight: 500;
-        }
-        .msg-text a:focus {
-            outline: 2px dashed var(--accent);
-            outline-offset: 2px;
-        }
-        .msg-text h3 {
-            margin: 5px 0 10px 0;
-            color: var(--accent);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 14px;
-        }
+        .msg-text a { color: var(--accent); text-decoration: underline; font-weight: 500; }
+        .msg-text a:focus { outline: 2px dashed var(--accent); outline-offset: 2px; }
+        .msg-text h3 { margin: 5px 0 10px 0; color: var(--accent); font-family: 'Orbitron', sans-serif; font-size: 14px; }
+        .msg-text code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 12px; }
 
         .terminal-input-bar {
             display: flex;
@@ -170,18 +177,25 @@
 <div class="workspace">
     <div class="view-header">
         <div>
-            <h1>J.A.V.I.M. // CORE</h1>
+            <h1>J.A.V.I.M. // INGESTION</h1>
             <div style="font-size: 9px; color: var(--text-dim); font-family: 'Orbitron'; margin-top: 4px;">Just A Very Intelligent Model</div>
         </div>
         <div id="clock-display" style="font-family: monospace; font-size: 13px; color: var(--accent);">00:00:00</div>
     </div>
 
     <div class="main-layout">
+        <!-- Local Processing Drop Zone -->
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <p>Drag & Drop Documents Here or Click to Browse</p>
+            <span>Supports PDF, DOCX, TXT, MD (Converted locally into LLM-ready JSON text)</span>
+            <input type="file" id="file-input" style="display: none;" accept=".pdf,.docx,.txt,.md">
+        </div>
+
         <div class="terminal-container">
             <div id="terminal-feed" class="terminal-feed"></div>
             <div class="terminal-input-bar">
                 <span style="color: var(--accent); font-weight: bold;">&gt;</span>
-                <input type="text" id="terminal-input" placeholder="Consult J.A.V.I.M..." autocomplete="off">
+                <input type="text" id="terminal-input" placeholder="Execute commands or inspect context status..." autocomplete="off">
                 <button class="btn" onclick="handleUserSubmit()">Send</button>
             </div>
         </div>
@@ -189,26 +203,13 @@
 </div>
 
 <script>
-let state;
-const STORAGE_KEY = 'javim_core_state_v3';
-const OLLAMA_URL = 'http://localhost:11434/api/chat';
+// Configure local worker path for PDF processing engine
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-function initSystemState() {
-    let raw = localStorage.getItem(STORAGE_KEY);
-    try {
-        state = JSON.parse(raw);
-        if (!state || !state.dialogHistory) throw new Error();
-    } catch (e) {
-        state = {
-            dialogHistory: [
-                { sender: 'sys', text: "J.A.V.I.M. Core operational. Standing by to act as your information butler, preserve data consistency, and keep updates clear." }
-            ]
-        };
-        save();
-    }
-}
-
-function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+// Volatile in-memory runtime history (no localStorage calls, resets clean on page reload)
+let sessionDialogHistory = [
+    { sender: 'sys', text: "### J.A.V.I.M. Operational Parameters\n\nStanding by to process data. Drop any document above to parse it instantly into text-optimized JSON structures for your local machine terminal." }
+];
 
 function updateClock() {
     const now = new Date();
@@ -216,44 +217,28 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 
-// Helper function to turn raw string variables into interactive markdown/anchors safely
 function formatMessageText(inputText) {
-    let securedText = inputText
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-
-    // Process section headers
+    let securedText = inputText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     securedText = securedText.replace(/^### (.*)$/gm, '<h3>$1</h3>');
-
-    // Parse block code strings
-    securedText = securedText.replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 3px; font-family: monospace;">$1</code>');
-
-    // Parse absolute links into interactively focusable anchors (Vimium compatible)
+    securedText = securedText.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
     const urlPattern = /(https?:\/\/[^\s\(\)\<\>]+)/g;
     securedText = securedText.replace(urlPattern, function(url) {
-        let cleanUrl = url;
-        if (cleanUrl.endsWith('.') || cleanUrl.endsWith(',')) {
-            cleanUrl = cleanUrl.slice(0, -1);
-        }
+        let cleanUrl = url.endsWith('.') || url.endsWith(',') ? url.slice(0, -1) : url;
         return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" tabindex="0">${cleanUrl}</a>`;
     });
-
     return securedText;
 }
 
 function renderTerminalFeed() {
     const feed = document.getElementById('terminal-feed');
     feed.innerHTML = '';
-    state.dialogHistory.forEach(msg => {
+    sessionDialogHistory.forEach(msg => {
         const card = document.createElement('div');
         card.className = `msg ${msg.sender}`;
-        
-        const formattedText = formatMessageText(msg.text);
-        
         card.innerHTML = `
             <span class="msg-sender">${msg.sender === 'sys' ? 'J.A.V.I.M.' : 'USER'}</span>
-            <div class="msg-text">${formattedText}</div>
+            <div class="msg-text">${formatMessageText(msg.text)}</div>
         `;
         feed.appendChild(card);
     });
@@ -261,8 +246,7 @@ function renderTerminalFeed() {
 }
 
 function appendDialog(sender, text) {
-    state.dialogHistory.push({ sender, text });
-    save();
+    sessionDialogHistory.push({ sender, text });
     renderTerminalFeed();
 }
 
@@ -274,37 +258,91 @@ function detectOS() {
     return 'unknown';
 }
 
-function getSetupInstructions() {
+function getTerminalSetupInstructions() {
     const os = detectOS();
-    let steps = "";
-    
     if (os === 'windows') {
-        steps = `### Detected Environment: Windows\n\n` +
-                `1. Download the installer from the official site: https://ollama.com/download\n` +
-                `2. Run the executable to install Ollama.\n` +
-                `3. Once installed, open your command prompt (cmd) or PowerShell and pull your desired model:\n` +
-                `   \`ollama run llama3\`\n` +
-                `4. Verify it is running locally on port 11434 by opening http://localhost:11434 in your browser.`;
-    } else if (os === 'linux') {
-        steps = `### Detected Environment: Linux\n\n` +
-                `1. Open your terminal and install via the official script:\n` +
-                `   \`curl -fsSL https://ollama.com/install.sh | sh\`\n` +
-                `2. Start and enable the service:\n` +
-                `   \`sudo systemctl enable ollama\`\n` +
-                `   \`sudo systemctl start ollama\`\n` +
-                `3. Download and test your model framework:\n` +
-                `   \`ollama run llama3\`\n` +
-                `4. Ensure port binds correctly via: \`curl http://localhost:11434\``;
+        return `### Local Terminal Guide (Windows)\n\n` +
+               `1. Open PowerShell or Command Prompt.\n` +
+               `2. To feed the processed JSON text straight into your model instance, execute:\n` +
+               `   \`ollama run llama3 "Your copied JSON data goes here"\`\n\n` +
+               `*Engine download paths available at: https://ollama.com/download*`;
     } else {
-        steps = `### Detected Environment: Undetermined\n\n` +
-                `Please check your operating system configuration.\n` +
-                `- For Linux: Run \`curl -fsSL https://ollama.com/install.sh | sh\`\n` +
-                `- For Windows: Download the desktop installation binaries directly from https://ollama.com/download`;
+        return `### Local Terminal Guide (Linux)\n\n` +
+               `1. Launch your preferred shell window.\n` +
+               `2. Pass parsed payloads into your inference parameters directly:\n` +
+               `   \`ollama run llama3 "$(cat parsed_document.json)"\`\n\n` +
+               `*Linux pipeline installation: \`curl -fsSL https://ollama.com/install.sh | sh\`*`;
     }
-    return steps;
 }
 
-async function handleUserSubmit() {
+// File Ingestion Logic
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); }, false);
+});
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); }, false);
+});
+
+dropZone.addEventListener('drop', (e) => { handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', (e) => { handleFiles(e.target.files); });
+
+function handleFiles(files) {
+    if (!files.length) return;
+    const file = files[0];
+    const reader = new FileReader();
+    
+    appendDialog('sys', `Analyzing and parsing file: \`${file.name}\`...`);
+
+    if (file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+        reader.onload = function(e) { processExtractedText(file.name, e.target.result); };
+        reader.readAsText(file);
+    } else if (file.name.endsWith('.docx')) {
+        reader.onload = function(e) {
+            mammoth.extractRawText({ arrayBuffer: e.target.result })
+                .then(result => processExtractedText(file.name, result.value))
+                .catch(err => appendDialog('sys', `### Ingestion Error\nCould not extract DOCX contents.`));
+        };
+        reader.readAsArrayBuffer(file);
+    } else if (file.name.endsWith('.pdf')) {
+        reader.onload = function(e) {
+            const typedarray = new Uint8Array(e.target.result);
+            pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                let maxPages = pdf.numPages;
+                let countPromises = [];
+                for (let j = 1; j <= maxPages; j++) {
+                    countPromises.push(pdf.getPage(j).then(page => page.getTextContent().then(text => text.items.map(s => s.str).join(' '))));
+                }
+                Promise.all(countPromises).then(pageTexts => processExtractedText(file.name, pageTexts.join('\n')));
+            }).catch(err => appendDialog('sys', `### Ingestion Error\nFailed parsing document pages.`));
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        appendDialog('sys', "### File Rejected\nFormat unsupported. Please utilize structured plain text, markdown, PDFs, or Word documents.");
+    }
+}
+
+function processExtractedText(filename, rawText) {
+    // Generate structure optimized explicitly for LLM context reading bounds
+    const structuredPayload = {
+        metadata: {
+            source_file: filename,
+            ingest_timestamp: new Date().toISOString(),
+            character_count: rawText.length
+        },
+        payload: {
+            extracted_content: rawText.trim()
+        }
+    };
+    
+    const outputJson = JSON.stringify(structuredPayload, null, 2);
+    
+    appendDialog('sys', `### JSON Conversion Successful\n\nCopy the text configuration block below and execute it directly inside your system console environment:\n\n\`\`\`json\n${outputJson}\n\`\`\``);
+}
+
+function handleUserSubmit() {
     const input = document.getElementById('terminal-input');
     const text = input.value.trim();
     if (!text) return;
@@ -312,56 +350,11 @@ async function handleUserSubmit() {
     appendDialog('user', text);
     input.value = '';
 
-    const now = new Date();
-    const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-    const systemInstruction = `You are J.A.V.I.M. (Just A Very Intelligent Model). You function as an elite, ultra-precise digital butler dedicated strictly to data tracking and maintaining user cognitive consistency.
-Current Time Context: ${timeString}
-
-Tone Blueprint:
-- You speak like a dedicated, highly competent classic butler integrated with a clean command terminal.
-- Calm, respectful, clear, brief, and fiercely protective of the user's focus, health, and schedule.`;
-
-    let messagesPayload = [{ role: 'system', content: systemInstruction }];
-    const recentHistory = state.dialogHistory.slice(-12);
-    recentHistory.forEach(msg => {
-        messagesPayload.push({
-            role: msg.sender === 'sys' ? 'assistant' : 'user',
-            content: msg.text
-        });
-    });
-
-    const placeholderIndex = state.dialogHistory.length;
-    state.dialogHistory.push({ sender: 'sys', text: "Processing baseline request..." });
-    renderTerminalFeed();
-
-    try {
-        const response = await fetch(OLLAMA_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: 'llama3',
-                messages: messagesPayload,
-                stream: false
-            })
-        });
-
-        const data = await response.json();
-        const replyText = data.message.content;
-
-        state.dialogHistory[placeholderIndex] = { sender: 'sys', text: replyText };
-        save();
-        renderTerminalFeed();
-
-    } catch (error) {
-        const setupInstructions = getSetupInstructions();
-        state.dialogHistory[placeholderIndex] = { 
-            sender: 'sys', 
-            text: `### Engine Connection Interrupted\n\nUnable to access the background local inference engine on port 11434.\n\n${setupInstructions}` 
-        };
-        save();
-        renderTerminalFeed();
-    }
+    // Standard static dashboard terminal instructions fallback
+    setTimeout(() => {
+        const guidance = getTerminalSetupInstructions();
+        appendDialog('sys', `${guidance}\n\n*Note: Ingestion data is currently isolated to memory. Paste your target data directly alongside your model invocation call inside your prompt tool.*`);
+    }, 400);
 }
 
 window.addEventListener('keydown', function(e) {
@@ -370,9 +363,8 @@ window.addEventListener('keydown', function(e) {
     }
 });
 
-initSystemState();
 updateClock();
 renderTerminalFeed();
 </script>
 </body>
-</html>
+</html> 
